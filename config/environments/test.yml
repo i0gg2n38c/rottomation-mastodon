@@ -1,0 +1,6 @@
+selenium:
+  grid_url: 'http://172.18.0.2:4444/wd/hub'
+environment:
+  base_url: 'https://mastodon.social/'
+  head_on: true
+  verbose_logging: true

@@ -1,0 +1,23 @@
+---
+formatter:
+  rubocop:
+    command: bundle exec rubocop
+    args: ["--autocorrect", "--stderr", "--stdin", "%filepath%"]
+
+test_paths:
+  - "spec"
+  - "test"
+
+include_paths:
+  - "app"
+  - "lib"
+  - "config"
+
+excluded_paths:
+  - "vendor/**/*"
+  - "tmp/**/*"
+  - "log/**/*"
+  - "node_modules/**/*"
+
+require_paths:
+  - "lib"
