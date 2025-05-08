@@ -56,5 +56,6 @@ RSpec.describe Mastodon::Service::TimelineService do
     expect(hashtag_posts).not_to be_nil
     expect(hashtag_posts.size).to eq limit
     expect(hashtag_posts.all? { |status| status.content.include? 'cat' })
+    expect(hashtag_posts.all? { |status| status.content.include? 'CatsOfMastodon' })
   end
 end
