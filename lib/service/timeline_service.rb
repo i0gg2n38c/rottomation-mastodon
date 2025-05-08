@@ -41,9 +41,11 @@ module Mastodon
         JSON.parse(resp.body, symbolize_names: true).map { |entry| Mastodon::Entity::Status.new(entry) }
       end
 
+      # Builder class for constructing the URL parameters for the public_timeline endpoint
       class TimelineQueryBuilder
         STRING_QUERY_PARAMS = %w[max_id since_id min_id limit].freeze
         BOOL_QUERY_PARAMS = %w[local remote only_media].freeze
+        QUERY_PARAMS = STRING_QUERY_PARAMS + BOOL_QUERY_PARAMS
 
         STRING_QUERY_PARAMS.each do |param|
           attr_reader param
@@ -71,12 +73,7 @@ module Mastodon
         def build
           params = {}
 
-          STRING_QUERY_PARAMS.each do |param|
-            val = instance_variable_get("@#{param}")
-            params[param.to_sym] = val unless val.nil?
-          end
-
-          BOOL_QUERY_PARAMS.each do |param|
+          QUERY_PARAMS.each do |param|
             val = instance_variable_get("@#{param}")
             params[param.to_sym] = val unless val.nil?
           end
