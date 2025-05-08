@@ -26,13 +26,18 @@ RSpec.describe Mastodon::Service::TimelineService do
     expect(timeline_posts.size).to eq 20
   end
 
-  it 'can limit the number of posts returned' do
-    timeline_posts = described_class.public_timeline(logger: logger, limit: 5)
+  it 'can process parameters' do
+    params = described_class::TimelineQueryBuilder.new
+                                                  .with_limit(5)
+                                                  .set_local
+                                                  .set_only_media
+                                                  .build
+    timeline_posts = described_class.public_timeline(logger: logger, timeline_queries: params)
     expect(timeline_posts).not_to be_nil
     expect(timeline_posts.size).to eq 5
   end
 
-  it 'can filter posts by hashtag' do
+  it 'can filter posts by hashtag via the hashtag timeline' do
     hashtag_posts = described_class.hashtag_timeline(logger: logger, hashtag: 'cats')
     expect(hashtag_posts).not_to be_nil
     expect(hashtag_posts.size).to eq 20

@@ -11,11 +11,13 @@ module Mastodon
       # Fetches statuses from the public timeline
       #
       # @param logger [Logger] Logger instance for request logging
-      # @param limit [Integer, nil] Number of statuses to return (default: 20)
+      # @param limit [Hash] queries we are providing with the request. Construct with
+      # TimelineService::TimelineQueryBuilder#build
       # @return [Array<Mastodon::Entity::Status>] Collection of status objects
-      def self.public_timeline(logger:, limit: nil)
+      def self.public_timeline(logger:, timeline_queries: nil)
         req = Rottomation::HttpRequestBuilder.new(url: PUBLIC_TIMELINE_URL, method_type: :get)
-                                             .with_url_param('limit', limit, condition_to_include: !limit.nil?)
+                                             .with_url_params(timeline_queries,
+                                                              condition_to_include: !timeline_queries.nil?)
                                              .with_header('accept', 'application/json')
                                              .build
         resp = execute_request(logger: logger, request: req)
@@ -37,6 +39,49 @@ module Mastodon
                                              .build
         resp = execute_request(logger: logger, request: req)
         JSON.parse(resp.body, symbolize_names: true).map { |entry| Mastodon::Entity::Status.new(entry) }
+      end
+
+      class TimelineQueryBuilder
+        STRING_QUERY_PARAMS = %w[max_id since_id min_id limit].freeze
+        BOOL_QUERY_PARAMS = %w[local remote only_media].freeze
+
+        STRING_QUERY_PARAMS.each do |param|
+          attr_reader param
+        end
+
+        BOOL_QUERY_PARAMS.each do |param|
+          attr_reader param
+        end
+
+        # Use meta programming to construct query building methods :D
+        STRING_QUERY_PARAMS.each do |timeline_query|
+          define_method("with_#{timeline_query}") do |query|
+            instance_variable_set("@#{timeline_query}", query)
+            self
+          end
+        end
+
+        BOOL_QUERY_PARAMS.each do |timeline_query|
+          define_method("set_#{timeline_query}") do
+            instance_variable_set("@#{timeline_query}", true)
+            self
+          end
+        end
+
+        def build
+          params = {}
+
+          STRING_QUERY_PARAMS.each do |param|
+            val = instance_variable_get("@#{param}")
+            params[param.to_sym] = val unless val.nil?
+          end
+
+          BOOL_QUERY_PARAMS.each do |param|
+            val = instance_variable_get("@#{param}")
+            params[param.to_sym] = val unless val.nil?
+          end
+          params
+        end
       end
     end
   end
