@@ -32,7 +32,7 @@ RSpec.describe Mastodon::Service::TimelineService do
                                                   .set_local
                                                   .set_only_media
                                                   .build
-    timeline_posts = described_class.public_timeline(logger: logger, timeline_queries: params)
+    timeline_posts = described_class.public_timeline(logger: logger, params: params)
     expect(timeline_posts).not_to be_nil
     expect(timeline_posts.size).to eq 5
   end
@@ -41,6 +41,20 @@ RSpec.describe Mastodon::Service::TimelineService do
     hashtag_posts = described_class.hashtag_timeline(logger: logger, hashtag: 'cats')
     expect(hashtag_posts).not_to be_nil
     expect(hashtag_posts.size).to eq 20
+    expect(hashtag_posts.all? { |status| status.content.include? 'cat' })
+  end
+
+  it 'can process parameters on the hashtag timeline' do
+    limit = 5
+    params = described_class::HashTagTimelineQueryBuilder.new
+                                                         .with_any('CatsOfMastodon')
+                                                         .with_limit(limit)
+                                                         .set_local
+                                                         .set_only_media
+                                                         .build
+    hashtag_posts = described_class.hashtag_timeline(logger: logger, hashtag: 'cats', params: params)
+    expect(hashtag_posts).not_to be_nil
+    expect(hashtag_posts.size).to eq limit
     expect(hashtag_posts.all? { |status| status.content.include? 'cat' })
   end
 end
