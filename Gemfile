@@ -6,6 +6,7 @@ gem 'rottomation'
 
 group :development, :test do
   gem 'money'
+  gem 'nokogiri'
   gem 'rspec'
   gem 'rubocop'
   gem 'rubocop-rspec'

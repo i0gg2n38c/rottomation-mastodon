@@ -59,3 +59,16 @@ RSpec.describe Mastodon::Service::TimelineService do
     expect(hashtag_posts.all? { |status| status.content.include? 'CatsOfMastodon' })
   end
 end
+
+RSpec.describe Mastodon::Service::AuthenticationService do
+  let(:logger) { Rottomation::IO::RottomationLogger.new test_name: described_class.to_s }
+
+  it 'can authenticate' do
+    # This is just for demonstration purposes, this is not actually a valid login. At least it better not be. 😤😤😤
+    auth_context = described_class.sign_in(logger: logger, email: 'lol@lol.test', password: 'super_secret-pass')
+    expect(auth_context.username).not_to be_nil
+    expect(auth_context.password).not_to be_nil
+    expect(auth_context.session_cookies).not_to be_nil
+    expect(auth_context.session_cookies.soze).to eq 2
+  end
+end

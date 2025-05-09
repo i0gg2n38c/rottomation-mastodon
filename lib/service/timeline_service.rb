@@ -10,7 +10,7 @@ module Mastodon
 
       # Fetches statuses from the public timeline
       #
-      # @param logger [Logger] Logger instance for request logging
+      # @param logger [RottomationLogger] Logger instance for request logging
       # @param params [Hash, nil] url params we are providing with the request. Construct with
       # TimelineService::TimelineQueryBuilder#build
       # @return [Array<Mastodon::Entity::Status>] Collection of status objects
@@ -25,7 +25,7 @@ module Mastodon
 
       # Fetches statuses from the public timeline filtered by the provided hashtag
       #
-      # @param logger [Logger] Logger instance for request logging
+      # @param logger [RottomationLogger] Logger instance for request logging
       # @param hashtag [String] Hashtag to search for
       # @param params [Hash, nil] url params we are providing with the request. Construct with
       # TimelineService::HashTagTimelineQueryBuilder#build
