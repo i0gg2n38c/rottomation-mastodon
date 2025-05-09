@@ -6,7 +6,7 @@ require_relative '../lib/mastodon'
 
 # Tests
 RSpec.describe Mastodon::Pages::AboutPage do
-  let(:ldw) { Rottomation::IO::RottomationDriverWrapper.new test_name: described_class.to_s }
+  let(:ldw) { Rottomation::RottomationDriverWrapper.new test_name: described_class.to_s }
 
   after { ldw.driver_instance&.quit }
 
@@ -18,7 +18,7 @@ RSpec.describe Mastodon::Pages::AboutPage do
 end
 
 RSpec.describe Mastodon::Service::TimelineService do
-  let(:logger) { Rottomation::IO::RottomationLogger.new test_name: described_class.to_s }
+  let(:logger) { Rottomation::RottomationLogger.new test_name: described_class.to_s }
 
   it 'can be get posts from the timeline' do
     timeline_posts = described_class.public_timeline(logger: logger)
@@ -61,7 +61,7 @@ RSpec.describe Mastodon::Service::TimelineService do
 end
 
 RSpec.describe Mastodon::Service::AuthenticationService do
-  let(:logger) { Rottomation::IO::RottomationLogger.new test_name: described_class.to_s }
+  let(:logger) { Rottomation::RottomationLogger.new test_name: described_class.to_s }
 
   it 'can authenticate' do
     # This is just for demonstration purposes, this is not actually a valid login. At least it better not be. 😤😤😤
