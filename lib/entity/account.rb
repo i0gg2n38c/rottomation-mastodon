@@ -31,7 +31,7 @@ module Mastodon
                   :bot,
                   :source
 
-      def initialize(entity) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
+      def initialize(entity) # rubocop:disable Metrics/AbcSize
         super()
         @id = entity[:id]
         @username = entity[:username]

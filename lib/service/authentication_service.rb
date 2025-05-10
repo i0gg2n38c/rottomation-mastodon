@@ -11,7 +11,7 @@ module Mastodon
       # @param email [String] Email/Username to login to the instance with
       # @param password [String] Password for the user
       # @return [ottomation::AuthContext] auth_context for the provided user
-      def self.sign_in(logger:, email:, password:)
+      def self.sign_in(logger:, username:, password:)
         resp = get_login_form(logger: logger)
         cookies = Rottomation::HttpService.get_cookies_from_response(response: resp)
 
@@ -22,7 +22,7 @@ module Mastodon
 
         req = Rottomation::HttpRequestBuilder.new(url: SIGN_IN_URL, method_type: :post)
                                              .with_form_body({ 'authenticity_token' => csrf,
-                                                               'user[email]' => email,
+                                                               'user[email]' => username,
                                                                'user[password]' => password,
                                                                'button' => '' })
                                              .with_session_cookies(cookies)
@@ -34,7 +34,8 @@ module Mastodon
         end
 
         cookies = cookies.merge(Rottomation::HttpService.get_cookies_from_response(response: resp))
-        Rottomation::AuthContext.new(username: email, password: password).with_session_cookies(session_cookies: cookies)
+        Rottomation::AuthContext.new(username: username,
+                                     password: password).with_session_cookies(session_cookies: cookies)
       end
 
       def self.get_login_form(logger:)

@@ -65,10 +65,10 @@ RSpec.describe Mastodon::Service::AuthenticationService do
 
   it 'can authenticate' do
     # This is just for demonstration purposes, this is not actually a valid login. At least it better not be. 😤😤😤
-    auth_context = described_class.sign_in(logger: logger, email: 'lol@lol.test', password: 'super_secret-pass')
+    auth_context = described_class.sign_in(logger: logger, username: 'admin@localhost', password: 'mastodonadmin')
     expect(auth_context.username).not_to be_nil
     expect(auth_context.password).not_to be_nil
     expect(auth_context.session_cookies).not_to be_nil
-    expect(auth_context.session_cookies.soze).to eq 2
+    expect(auth_context.session_cookies.size).to eq 2
   end
 end
