@@ -6,16 +6,34 @@ module Mastodon
     class AccountService < MastodonService
       ACCOUNTS_URL = "#{Mastodon.INSTANCE_URL}/api/v1/accounts"
 
-      def self.register_account(logger:, auth_context:, new_user_form_data:)
+      ##################################################################################################################
+      # SECTION: Request ###############################################################################################
+      ##################################################################################################################
+      def self.register_account_request(logger:, auth_context:, new_user_form_data:)
         req = MastodonAuthedRequestBuilder.new(url: ACCOUNTS_URL, method_type: :post)
                                           .with_form_body(new_user_form_data)
                                           .with_auth(auth_context: auth_context)
                                           .build
 
-        resp = JSON.parse(execute_request(logger: logger, request: req).body)
+        execute_request(logger: logger, request: req)
+      end
+
+      ##################################################################################################################
+      # SECTION: Processing ############################################################################################
+      ##################################################################################################################
+      def self.register_account(logger:, auth_context:, new_user_form_data:)
+        resp = register_account_request(logger: logger, auth_context: auth_context,
+                                        new_user_form_data: new_user_form_data)
+        verify_response_code(logger: logger, expected: 200, response: resp)
+
+        resp = JSON.parse(resp.body)
         Rottomation::AuthContext.new(username: new_user_form_data[:email], password: new_user_form_data[:password])
                                 .with_token(token: "Bearer #{resp['access_token']}")
       end
+
+      ##################################################################################################################
+      # SECTION: Builders ##############################################################################################
+      ##################################################################################################################
 
       # Builder for the form body fields for registering a new account.
       # Conventionally:

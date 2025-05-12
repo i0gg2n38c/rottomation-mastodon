@@ -1,0 +1,29 @@
+# frozen_string_literal: true
+
+module Mastodon
+  module Service
+    class SERVICE_NAME_HERE < MastodonService
+      # Put URLs used for this service at the top of the class
+
+      ##################################################################################################################
+      # SECTION: Request ###############################################################################################
+      ##################################################################################################################
+      #
+      # Put the request methods here. All of them should return Rottomation::HttpRequest
+
+      ##################################################################################################################
+      # SECTION: Processing ############################################################################################
+      ##################################################################################################################
+      #
+      # Put the processing of the request itself here. example:
+      #   resp = service_request(logger: logger, auth_context: auth_context, params: params)
+      #   JSON.parse(resp.body, symbolize_names: true).map { |entry| Mastodon::Entity::EntityType.new(entry) }
+
+      ##################################################################################################################
+      # SECTION: Builders ##############################################################################################
+      ##################################################################################################################
+      #
+      # Put the Parameter and Request Body builders down in this section
+    end
+  end
+end

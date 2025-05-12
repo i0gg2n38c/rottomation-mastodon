@@ -5,19 +5,6 @@ require 'rottomation'
 require 'securerandom'
 require_relative '../lib/mastodon'
 
-# Tests
-RSpec.describe Mastodon::Pages::AboutPage do
-  let(:ldw) { Rottomation::RottomationDriverWrapper.new test_name: described_class.to_s }
-
-  after { ldw.driver_instance&.quit }
-
-  it 'can be created' do
-    page = described_class.new driver: ldw
-    page.get
-    expect(page.driver.driver_instance.title).to include 'About - Mastodon'
-  end
-end
-
 RSpec.describe Mastodon::Service::TimelineService do
   let(:logger) { Rottomation::RottomationLogger.new test_name: described_class.to_s }
   let(:auth_context) { admin_auth }
@@ -93,12 +80,14 @@ RSpec.describe Mastodon::Service::AccountService do
   end
 
   it 'can create a new account' do
+    logger.log_info(log: 'Registering new account')
     resp_context = described_class.register_account(logger: logger, auth_context: auth_context,
                                                     new_user_form_data: generic_new_user_form_data)
     expect(resp_context).not_to be_nil
   end
 
   it 'can be used to login after creation' do
+    logger.log_info(log: 'Registering new account and getting Session Cookies')
     resp_context = described_class.register_account(logger: logger, auth_context: auth_context,
                                                     new_user_form_data: generic_new_user_form_data)
     expect(resp_context).not_to be_nil

@@ -33,10 +33,7 @@ module Mastodon
                                              .with_session_cookies(cookies)
                                              .build
         resp = execute_request(logger: logger, request: req)
-        unless resp.code == 302
-          raise ArgumentError,
-                "Login failed with  response code #{resp.code}\n and a response body of: #{resp.body}"
-        end
+        verify_response_code(logger: logger, expected: 302, response: resp)
 
         cookies = cookies.merge(resp.parse_cookies_from_headers)
 
@@ -50,6 +47,7 @@ module Mastodon
                                              .with_session_cookies(cookies)
                                              .build
         resp = execute_request(logger: logger, request: req)
+        verify_response_code(logger: logger, expected: 200, response: resp)
         auth_context.with_token(token: "Bearer #{get_bearer_token_from_html_response(resp)}")
       end
 
@@ -66,7 +64,9 @@ module Mastodon
       def self.get_login_form(logger:)
         request = Rottomation::HttpRequestBuilder.new(url: SIGN_IN_URL, method_type: :get)
                                                  .build
-        execute_request(logger: logger, request: request)
+        resp = execute_request(logger: logger, request: request)
+        verify_response_code(logger: logger, expected: 200, response: resp)
+        resp
       end
 
       def self.get_csrf_from_html_response(response:)
