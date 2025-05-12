@@ -2,6 +2,7 @@
 
 require 'rottomation'
 
+# Main module
 module Mastodon
   def self.instance_url
     Rottomation::Config::Configuration.config['environment']['base_url']
