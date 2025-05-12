@@ -18,9 +18,31 @@ module Mastodon
         execute_request(logger: logger, request: req)
       end
 
+      def self.lookup_account_request(logger:, username:)
+        req = Rottomation::HttpRequestBuilder.new(url: "#{ACCOUNTS_URL}/lookup", method_type: :get)
+                                             .with_url_param('acct', username)
+                                             .with_header('accept', 'application/json')
+                                             .build
+        execute_request(logger: logger, request: req)
+      end
+
+      def self.verify_credentials_request(logger:, auth_context:)
+        req = MastodonAuthedRequestBuilder.new(url: "#{ACCOUNTS_URL}/verify_credentials", method_type: :get)
+                                          .with_header('Authorization', auth_context.token)
+                                          .build
+
+        execute_request(logger: logger, request: req)
+      end
+
       ##################################################################################################################
       # SECTION: Processing ############################################################################################
       ##################################################################################################################
+
+      # Registers an account to the Instance using the provided user form data.
+      # @param logger [RottomationLogger]
+      # @param auth_context [Rottomation::AuthContext]
+      # @param new_user_form_data [CreateAccountFormBuilder]
+      # @return [Rottomation::AuthContext]
       def self.register_account(logger:, auth_context:, new_user_form_data:)
         resp = register_account_request(logger: logger, auth_context: auth_context,
                                         new_user_form_data: new_user_form_data)
@@ -29,6 +51,29 @@ module Mastodon
         resp = JSON.parse(resp.body)
         Rottomation::AuthContext.new(username: new_user_form_data[:email], password: new_user_form_data[:password])
                                 .with_token(token: "Bearer #{resp['access_token']}")
+      end
+
+      # Looks up an account with the provided username.
+      # @param logger [RottomationLogger]
+      # @param username [String]
+      # @return [Mastodon::Entity::Accoun]
+      def self.lookup_account(logger:, username:)
+        resp = lookup_account_request(logger: logger, username: username)
+        verify_response_code(logger: logger, expected: 200, response: resp)
+        Mastodon::Entity::Account.new(JSON.parse(resp.body, symbolize_names: true))
+      end
+
+      # Verifies a user's Bearer auth token is valid
+      # @param logger [RottomationLogger]
+      # @param auth_context [Rottomation::AuthContext] Auth context of the user who's credentials and account state we
+      # are validating
+      # @return [Mastodon::Entity::Accoun]
+      def self.verify_credentials(logger:, auth_context:)
+        resp = verify_credentials_request(logger: logger, auth_context: auth_context)
+        verify_response_code(logger: logger, expected: 200, response: resp)
+
+        resp = JSON.parse(resp.body)
+        Mastodon::Entity::Account.new(resp)
       end
 
       ##################################################################################################################

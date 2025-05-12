@@ -64,7 +64,7 @@ end
 
 RSpec.describe Mastodon::Service::AccountService do
   let(:logger) { Rottomation::RottomationLogger.new test_name: described_class.to_s }
-  let(:auth_context) { admin_auth }
+  let(:admin_auth_context) { admin_auth }
 
   def generic_new_user_form_data
     described_class::CreateAccountFormBuilder.new
@@ -78,19 +78,37 @@ RSpec.describe Mastodon::Service::AccountService do
 
   it 'can create a new account' do
     logger.log_info(log: 'Registering new account')
-    resp_context = described_class.register_account(logger: logger, auth_context: auth_context,
+    resp_context = described_class.register_account(logger: logger, auth_context: admin_auth_context,
                                                     new_user_form_data: generic_new_user_form_data)
     expect(resp_context).not_to be_nil
   end
 
   it 'can be used to login after creation' do
     logger.log_info(log: 'Registering new account and getting Session Cookies')
-    resp_context = described_class.register_account(logger: logger, auth_context: auth_context,
+    resp_context = described_class.register_account(logger: logger, auth_context: admin_auth_context,
                                                     new_user_form_data: generic_new_user_form_data)
     expect(resp_context).not_to be_nil
 
     resp_context = Mastodon::Service::AuthenticationService.get_session_cookies_for_auth_context(logger: logger,
                                                                                                  auth_context: resp_context)
     expect(resp_context.session_cookies).not_to be_nil
+  end
+
+  it 'can validate bearer token' do
+    logger.log_info(log: 'Registering new account and getting Session Cookies')
+    data = generic_new_user_form_data
+    resp_context = described_class.register_account(logger: logger, auth_context: admin_auth_context,
+                                                    new_user_form_data: data)
+
+    logger.log_info(log: 'Fetching account by username to get its ID')
+    found_account = described_class.lookup_account(logger: logger, username: data[:username])
+
+    logger.log_info(log: "Confirming account with user id #{found_account.id} as admin user")
+    Mastodon::Service::AdminAccountsService.confirm_account(logger: logger, admin_auth_context: admin_auth_context,
+                                                            id: found_account.id)
+
+    logger.log_info(log: 'verifying credentials for the now activated user')
+    validated_account = described_class.verify_credentials(logger: logger, auth_context: resp_context)
+    expect(validated_account.username).to eq data['username']
   end
 end
