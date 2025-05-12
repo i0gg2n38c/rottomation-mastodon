@@ -6,6 +6,7 @@ module Mastodon
     class TimelineService < MastodonService
       BASE_URL = "#{Mastodon.INSTANCE_URL}/api/v1/timelines"
       PUBLIC_TIMELINE_URL = "#{BASE_URL}/public"
+      HOME_TIMELINE_URL = "#{BASE_URL}/home"
       HASHTAG_TIMELINE_URL = "#{BASE_URL}/tag/"
 
       # Fetches statuses from the public timeline
@@ -25,7 +26,7 @@ module Mastodon
 
       # Fetches statuses from the public timeline filtered by the provided hashtag
       #
-      # @param logger [RottomationLogger] Logger instance for request logging
+      # @param logger [RottomationLogger] Logger instance for request logging2
       # @param hashtag [String] Hashtag to search for
       # @param params [Hash, nil] url params we are providing with the request. Construct with
       # TimelineService::HashTagTimelineQueryBuilder#build
@@ -41,14 +42,20 @@ module Mastodon
         JSON.parse(resp.body, symbolize_names: true).map { |entry| Mastodon::Entity::Status.new(entry) }
       end
 
-      # Builder class for constructing the URL parameters for the public_timeline endpoint
-      class TimelineQueryBuilder
-        STRING_QUERY_PARAMS = %w[max_id since_id min_id limit].freeze
-        BOOL_QUERY_PARAMS = %w[local remote only_media].freeze
-        QUERY_PARAMS = STRING_QUERY_PARAMS + BOOL_QUERY_PARAMS
+      def self.home_timeline(logger:, auth_context:, params: nil)
+        req = Mastodon::MastodonAuthedRequestBuilder.new(url: HOME_TIMELINE_URL, method_type: :get)
+                                                    .with_auth(auth_context: auth_context)
+                                                    .with_url_params(params, condition_to_include: !params.nil?)
+                                                    .build
+        resp = execute_request(logger: logger, request: req)
+        JSON.parse(resp.body, symbolize_names: true).map { |entry| Mastodon::Entity::Status.new(entry) }
+      end
 
-        # Use meta programming to make readers and builder methods for the param types :D
-        STRING_QUERY_PARAMS.each do |param|
+      # Base Query Builder class for the Timeline API endpoints.
+      class TimelineQueryBuilder
+        HOME_QUERY_PARAMS = %w[max_id since_id min_id limit].freeze
+
+        HOME_QUERY_PARAMS.each do |param|
           attr_reader param
 
           define_method("with_#{param}") do |query|
@@ -57,7 +64,22 @@ module Mastodon
           end
         end
 
-        BOOL_QUERY_PARAMS.each do |param|
+        def build
+          params = {}
+
+          HOME_QUERY_PARAMS.each do |param|
+            val = instance_variable_get("@#{param}")
+            params[param.to_sym] = val unless val.nil?
+          end
+          params
+        end
+      end
+
+      # Builder class for constructing the URL parameters for the public_timeline endpoint
+      class PublicTimelineQueryBuilder < TimelineQueryBuilder
+        PUBLIC_QUERY_PARAMS = %w[local remote only_media].freeze
+
+        PUBLIC_QUERY_PARAMS.each do |param|
           attr_reader param
 
           define_method("set_#{param}") do
@@ -67,9 +89,9 @@ module Mastodon
         end
 
         def build
-          params = {}
+          params = super
 
-          QUERY_PARAMS.each do |param|
+          PUBLIC_QUERY_PARAMS.each do |param|
             val = instance_variable_get("@#{param}")
             params[param.to_sym] = val unless val.nil?
           end
@@ -78,7 +100,7 @@ module Mastodon
       end
 
       # Builder class for constructing the URL parameters for the hashtag_timeline endpoint
-      class HashTagTimelineQueryBuilder < TimelineQueryBuilder
+      class HashTagTimelineQueryBuilder < PublicTimelineQueryBuilder
         HASHTAG_QUERIES = %w[any all none].freeze
 
         HASHTAG_QUERIES.each do |param|
