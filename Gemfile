@@ -11,5 +11,6 @@ group :development, :test do
   gem 'rubocop'
   gem 'rubocop-rspec'
   gem 'ruby-lsp-rspec', require: false
+  gem 'securerandom'
   gem 'selenium-webdriver'
 end

@@ -14,11 +14,11 @@ module Mastodon
       #   - With the returned session cookies, get the Bearer token by making a request to '/' and parses the DOM for
       #        the Bearer token
       #   - Returned the authentication context to be used in other API calls
-      # @param logger [RottomationLogger] Logger instance for request logging
+      # @param logger [Rottomation::RottomationLogger] Logger instance for request logging
       # @param email [String] Email/Username to login to the instance with
       # @param password [String] Password for the user
-      # @return [ottomation::AuthContext] auth_context for the provided user
-      def self.sign_in(logger:, username:, password:)
+      # @return [Rottomation::AuthContext] auth_context for the provided user
+      def self.sign_in(logger:, username:, password:, bearer: nil)
         resp = get_login_form(logger: logger)
         cookies = resp.parse_cookies_from_headers
 
@@ -40,17 +40,27 @@ module Mastodon
 
         cookies = cookies.merge(resp.parse_cookies_from_headers)
 
+        auth_context = Rottomation::AuthContext.new(username: username, password: password)
+                                               .with_session_cookies(session_cookies: cookies)
+        return auth_context unless bearer.nil?
+
         # Here we just make a call to get whatever we get back from '/', providing the session cookies in the request,
         # which will give us an HTML page that we can swipe the Bearer token from
         req = Rottomation::HttpRequestBuilder.new(url: Mastodon.INSTANCE_URL, method_type: :get)
                                              .with_session_cookies(cookies)
                                              .build
         resp = execute_request(logger: logger, request: req)
-        bearer_token = "Bearer #{get_bearer_token_from_html_response(resp)}"
+        auth_context.with_token(token: "Bearer #{get_bearer_token_from_html_response(resp)}")
+      end
 
-        Rottomation::AuthContext.new(username: username, password: password)
-                                .with_token(token: bearer_token)
-                                .with_session_cookies(session_cookies: cookies)
+      # If you already have the auth_context object, but no login cookies, utilize this method. It
+      # will perform the same steps as the normal login process to get the cookies, but skip getting
+      # a new Bearer token
+      # @param logger [Rottomation::Logger]
+      # @param auth_context [Rottomation::AuthContext]
+      def self.get_session_cookies_for_auth_context(logger:, auth_context:)
+        sign_in(logger: logger, username: auth_context.username, password: auth_context.password,
+                bearer: auth_context.token)
       end
 
       def self.get_login_form(logger:)
