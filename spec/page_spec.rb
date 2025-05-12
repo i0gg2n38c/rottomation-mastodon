@@ -1,9 +1,6 @@
 # frozen_string_literal: true
 
-require 'rspec'
-require 'rottomation'
-require 'securerandom'
-require_relative '../lib/mastodon'
+require_relative 'spec_helper'
 
 # Tests
 RSpec.describe Mastodon::Pages::AboutPage do

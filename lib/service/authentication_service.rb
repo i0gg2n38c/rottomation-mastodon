@@ -4,7 +4,7 @@ module Mastodon
   module Service
     # comment
     class AuthenticationService < MastodonService
-      SIGN_IN_URL = "#{Mastodon.INSTANCE_URL}/auth/sign_in"
+      SIGN_IN_URL = "#{Mastodon.instance_url}/auth/sign_in"
 
       # Logins in to the configured Mastodon instance using the provided username and password.
       # Performs the following workflow:
@@ -43,7 +43,7 @@ module Mastodon
 
         # Here we just make a call to get whatever we get back from '/', providing the session cookies in the request,
         # which will give us an HTML page that we can swipe the Bearer token from
-        req = Rottomation::HttpRequestBuilder.new(url: Mastodon.INSTANCE_URL, method_type: :get)
+        req = Rottomation::HttpRequestBuilder.new(url: Mastodon.instance_url, method_type: :get)
                                              .with_session_cookies(cookies)
                                              .build
         resp = execute_request(logger: logger, request: req)

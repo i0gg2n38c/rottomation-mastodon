@@ -4,7 +4,7 @@ module Mastodon
   module Service
     # comment
     class AccountService < MastodonService
-      ACCOUNTS_URL = "#{Mastodon.INSTANCE_URL}/api/v1/accounts"
+      ACCOUNTS_URL = "#{Mastodon.instance_url}/api/v1/accounts"
 
       ##################################################################################################################
       # SECTION: Request ###############################################################################################

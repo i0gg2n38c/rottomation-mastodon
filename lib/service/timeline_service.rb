@@ -4,7 +4,7 @@ module Mastodon
   module Service
     # comment
     class TimelineService < MastodonService
-      BASE_URL = "#{Mastodon.INSTANCE_URL}/api/v1/timelines"
+      BASE_URL = "#{Mastodon.instance_url}/api/v1/timelines"
       PUBLIC_TIMELINE_URL = "#{BASE_URL}/public"
       HOME_TIMELINE_URL = "#{BASE_URL}/home"
       HASHTAG_TIMELINE_URL = "#{BASE_URL}/tag/"

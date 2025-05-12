@@ -8,7 +8,7 @@ module Mastodon
     # Comment
     class MastodonPage < Rottomation::Pages::Page
       def initialize(driver:, uri: '', query: [])
-        super(driver: driver, base_url: Mastodon.INSTANCE_URL, uri: uri, query: [])
+        super(driver: driver, base_url: Mastodon.instance_url, uri: uri, query: [])
       end
     end
   end

@@ -1,9 +1,6 @@
 # frozen_string_literal: true
 
-require 'rspec'
-require 'rottomation'
-require 'securerandom'
-require_relative '../lib/mastodon'
+require_relative 'spec_helper'
 
 RSpec.describe Mastodon::Service::TimelineService do
   let(:logger) { Rottomation::RottomationLogger.new test_name: described_class.to_s }

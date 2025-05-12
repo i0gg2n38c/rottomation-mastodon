@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
-require 'requires'
+require 'rspec'
+require 'rottomation'
+require 'securerandom'
+require_relative '../lib/mastodon'
 
 RSpec.configure do |config|
   config.expect_with :rspec do |expectations|
