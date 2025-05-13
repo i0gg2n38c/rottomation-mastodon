@@ -3,7 +3,7 @@
 module Mastodon
   module Service
     # Service class for performing Admin actions for accounts
-    class AdminAccountsService < MastodonService
+    class AdminAccountsService < MastodonWebService
       ADMIN_ACCOUNTS_BASE_URL = "#{Mastodon.instance_url}/admin/accounts"
       ADMIN_ACCOUNTS_BY_ID_URL = "#{ADMIN_ACCOUNTS_BASE_URL}/:id"
       ADMIN_ACCOUNTS_CONFIRMATION_URL = "#{ADMIN_ACCOUNTS_BY_ID_URL}/confirmation"
@@ -29,18 +29,14 @@ module Mastodon
       ##################################################################################################################
       def self.confirm_account(logger:, admin_auth_context:, id:)
         logger.log_info(log: "Fetching CSRF token for #{ADMIN_ACCOUNTS_BY_ID_URL.gsub(':id', id)}")
-        csrf_resp = get_authenticity_token_for_approve_account_request(logger: logger,
-                                                                       admin_auth_context: admin_auth_context,
-                                                                       id: id)
+        csrf_resp = get_csrf_for_approve_account_request(logger: logger,
+                                                         admin_auth_context: admin_auth_context,
+                                                         id: id)
 
         verify_response_code(logger: logger, expected: 200, response: csrf_resp)
-        csrf = MastodonPageParsingUtils.get_csrf_from_html_response(response: csrf_resp)
-        updated_auth_context = Rottomation::AuthContext.new(username: admin_auth_context.username,
-                                                            password: admin_auth_context.password)
-                                                       .with_session_cookies(session_cookies: csrf_resp.cookies)
-                                                       .with_csrf(csrf: csrf)
+        updated_auth_context = update_auth_context(auth_context_to_update: admin_auth_context, response: csrf_resp)
 
-        logger.log_info(log: "Submitting confirm account request with csrf #{csrf}")
+        logger.log_info(log: "Submitting confirm account request with csrf #{updated_auth_context.csrf}")
         resp = confirm_account_request(logger: logger, admin_auth_context: updated_auth_context, id: id)
         verify_response_code(logger: logger, expected: 302, response: resp)
       end
@@ -48,16 +44,15 @@ module Mastodon
       ##################################################################################################################
       # SECTION: Private Methods #######################################################################################
       ##################################################################################################################
-
-      def self.get_authenticity_token_for_approve_account_request(logger:, admin_auth_context:, id:)
-        req = Mastodon::MastodonAuthedRequestBuilder.new(url: ADMIN_ACCOUNTS_BY_ID_URL.gsub(':id', id),
-                                                         method_type: :get)
-                                                    .with_session_cookies(admin_auth_context.session_cookies)
-                                                    .build
-        execute_request(logger: logger, request: req)
+      def self.get_csrf_for_approve_account_request(logger:, admin_auth_context:, id:)
+        execute_request(logger: logger,
+                        request: Mastodon::MastodonAuthedRequestBuilder.new(
+                          url: ADMIN_ACCOUNTS_BY_ID_URL.gsub(':id', id),
+                          method_type: :get
+                        ).with_session_cookies(admin_auth_context.session_cookies).build)
       end
 
-      private_class_method :get_authenticity_token_for_approve_account_request
+      private_class_method :get_csrf_for_approve_account_request
     end
   end
 end
