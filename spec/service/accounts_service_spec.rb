@@ -5,7 +5,7 @@ require_relative '../spec_helper'
 # TODO: Basic tests for the following. See: https://docs.joinmastodon.org/methods/accounts/
 # ok    Register an account
 # ok    Verify account credentials
-# nd    Update account credentials
+# ok    Update account credentials
 # nd    Get account
 # nd    Get multiple accounts
 # nd    Get account’s statuses
@@ -56,7 +56,6 @@ RSpec.describe Mastodon::Service::AccountService do
     }
   end
 
-  # Begin Tests
   def generic_new_user_form_data
     described_class::CreateAccountFormBuilder.new
                                              .set_agreement(does_agree: true)
@@ -76,6 +75,7 @@ RSpec.describe Mastodon::Service::AccountService do
                                                             id: found_account.id)
   end
 
+  # Begin Tests
   it 'can Register an account' do
     logger.log_info(log: 'Registering new account')
     resp_context = described_class.register_account(logger: logger, auth_context: admin_auth_context,
@@ -116,5 +116,22 @@ RSpec.describe Mastodon::Service::AccountService do
     expect(updated_account.display_name).to eq new_display_name
     expect(updated_account.fields.first.name).to eq field_name_to_match
     expect(updated_account.fields.first.value).to eq field_value_to_match
+  end
+
+  it 'can fetch a single account' do
+    logger.log_info(log: 'Registering new account and getting Session Cookies')
+    data = generic_new_user_form_data
+    described_class.register_account(logger: logger, auth_context: admin_auth_context,
+                                     new_user_form_data: data)
+    confirm_new_account(username: data[:username])
+
+    logger.log_info(log: 'Looking up the created account by username to get its ID')
+    fetched_account = described_class.lookup_account(logger: logger, username: data[:username])
+
+    account_by_id = described_class.get_account(logger: logger, auth_context: admin_auth_context,
+                                                id: fetched_account.id)
+
+    expect(account_by_id.username).to eq fetched_account.username
+    expect(account_by_id.id).to eq fetched_account.id
   end
 end
