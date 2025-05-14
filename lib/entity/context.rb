@@ -10,9 +10,9 @@ module Mastodon
 
       def initialize(entity)
         super()
-        @ancestors = entity[:ancestors]&.map { |ancestor| Mastodon::Status.new(ancestor) }
+        @ancestors = entity[:ancestors]&.map { |ancestor| Status.new(ancestor) }
         @descendants = entity[:descendants]&.map do |descendant|
-          Mastodon::Status.new(descendant)
+          Status.new(descendant)
         end
       end
     end

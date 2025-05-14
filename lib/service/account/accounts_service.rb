@@ -34,6 +34,14 @@ module Mastodon
         execute_request(logger: logger, request: req)
       end
 
+      def self.update_credentials_request(logger:, auth_context:, updated_credentials:)
+        req = MastodonAuthedRequestBuilder.new(url: "#{ACCOUNTS_URL}/update_credentials", method_type: :patch)
+                                          .with_header('Authorization', auth_context.token)
+                                          .with_form_body(updated_credentials)
+                                          .build
+
+        execute_request(logger: logger, request: req)
+      end
       ##################################################################################################################
       # SECTION: Processing ############################################################################################
       ##################################################################################################################
@@ -47,10 +55,8 @@ module Mastodon
         resp = register_account_request(logger: logger, auth_context: auth_context,
                                         new_user_form_data: new_user_form_data)
         verify_response_code(logger: logger, expected: 200, response: resp)
-
-        resp = JSON.parse(resp.body)
         Rottomation::AuthContext.new(username: new_user_form_data[:email], password: new_user_form_data[:password])
-                                .with_token(token: "Bearer #{resp['access_token']}")
+                                .with_token(token: "Bearer #{resp.parse_body_as_json[:access_token]}")
       end
 
       # Looks up an account with the provided username.
@@ -60,7 +66,7 @@ module Mastodon
       def self.lookup_account(logger:, username:)
         resp = lookup_account_request(logger: logger, username: username)
         verify_response_code(logger: logger, expected: 200, response: resp)
-        Mastodon::Entity::Account.new(JSON.parse(resp.body, symbolize_names: true))
+        Mastodon::Entity::Account.new(resp.parse_body_as_json)
       end
 
       # Verifies a user's Bearer auth token is valid
@@ -71,11 +77,20 @@ module Mastodon
       def self.verify_credentials(logger:, auth_context:)
         resp = verify_credentials_request(logger: logger, auth_context: auth_context)
         verify_response_code(logger: logger, expected: 200, response: resp)
-
-        resp = JSON.parse(resp.body)
-        Mastodon::Entity::Account.new(resp)
+        Mastodon::Entity::Account.new(resp.parse_body_as_json)
       end
 
+      # Verifies a user's Bearer auth token is valid
+      # @param logger [RottomationLogger]
+      # @param auth_context [Rottomation::AuthContext] Auth context of the user who's credentials and account state we
+      # are validating
+      # @return [Mastodon::Entity::Accoun]
+      def self.update_credentials(logger:, auth_context:, updated_credentials:)
+        resp = update_credentials_request(logger: logger, auth_context: auth_context,
+                                          updated_credentials: updated_credentials)
+        verify_response_code(logger: logger, expected: 200, response: resp)
+        Mastodon::Entity::Account.new(resp.parse_body_as_json)
+      end
       ##################################################################################################################
       # SECTION: Builders ##############################################################################################
       ##################################################################################################################
@@ -126,6 +141,55 @@ module Mastodon
 
             form_data
           end
+        end
+      end
+
+      class UpdateCredentialsBuilder
+        FORM_FIELDS = %w[display_name note avatar header attribution_domains fields_attributes].freeze
+        BOOL_FORM_FIELDS = %w[locked bot discoverable hide_collections indexable].freeze
+        ALL_FIELDS = FORM_FIELDS + BOOL_FORM_FIELDS
+
+        FORM_FIELDS.each do |field|
+          next if field == 'fields_attributes'
+
+          attr_reader field
+
+          define_method("with_#{field}") do |val|
+            instance_variable_set("@#{field}", val)
+            self
+          end
+        end
+
+        BOOL_FORM_FIELDS.each do |field|
+          attr_reader field
+
+          define_method("set_#{field}") do |val|
+            instance_variable_set("@#{field}", val)
+            self
+          end
+        end
+
+        def with_fields_attributes(hash)
+          @fields_attributes = hash
+          self
+        end
+
+        def build
+          form_data = {}
+
+          ALL_FIELDS.each do |param|
+            next if param == 'fields_attributes'
+
+            val = instance_variable_get("@#{param}")
+            form_data[param.to_sym] = val unless val.nil?
+          end
+
+          @fields_attributes&.each do |index, hash|
+            form_data["fields_attributes[#{index}][name]"] = hash[:name]
+            form_data["fields_attributes[#{index}][value]"] = hash[:value]
+          end
+
+          form_data
         end
       end
     end

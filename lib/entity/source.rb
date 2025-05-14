@@ -17,7 +17,7 @@ module Mastodon
       def initialize(entity)
         super()
         @note = entity[:note]
-        @fields = entity[:fields]&.map { |field| Mastodon::Field.new(field) }
+        @fields = entity[:fields]&.map { |field| Field.new(field) }
         @privacy = entity[:privacy]
         @sensitive = entity[:sensitive]
         @language = entity[:language]

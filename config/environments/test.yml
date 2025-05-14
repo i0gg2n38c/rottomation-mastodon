@@ -2,7 +2,7 @@ selenium:
   grid_url: 'http://172.18.0.2:4444/wd/hub'
 environment:
   protocol: 'http://'
-  # Get the Mastodon dev container IP by running `docker network instpect mastodon_devcontainer_external_network` and looking for the
+  # Get the Mastodon dev container IP by running `docker network inspect mastodon_devcontainer_external_network` and looking for the
   # entry for the `mastodon_devcontainer-app-1` entry.
   base_url: '172.20.0.11:3000'
   head_on: true # Whether you want the Selenium UI tests to launch a local browser windows with NoVNC acced

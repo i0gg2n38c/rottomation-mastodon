@@ -11,9 +11,9 @@ module Mastodon
 
       def initialize(entity)
         super()
-        @accounts = entity[:accounts]&.map { |account| Mastodon::Account.new(account) }
-        @statuses = entity[:statuses]&.map { |status| Mastodon::Status.new(status) }
-        @hashtags = entity[:hashtags]&.map { |hashtag| Mastodon::Tag.new(hashtag) }
+        @accounts = entity[:accounts]&.map { |account| Account.new(account) }
+        @statuses = entity[:statuses]&.map { |status| Status.new(status) }
+        @hashtags = entity[:hashtags]&.map { |hashtag| Tag.new(hashtag) }
       end
     end
   end

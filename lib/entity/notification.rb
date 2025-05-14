@@ -16,8 +16,8 @@ module Mastodon
         @id = entity[:id]
         @type = entity[:username]
         @created_at = entity[:created_at]
-        @account = entity[:account].nil? ? nil : Mastodon::Account.new(entity[:account])
-        @status = entity[:status].nil? ? nil : Mastodon::Status.new(entity[:status])
+        @account = entity[:account].nil? ? nil : Account.new(entity[:account])
+        @status = entity[:status].nil? ? nil : Status.new(entity[:status])
       end
     end
   end

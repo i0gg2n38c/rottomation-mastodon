@@ -13,9 +13,9 @@ module Mastodon
       def initialize(entity)
         super()
         @id = entity[:id]
-        @accounts = entity[:accounts]&.map { |account| Mastodon::Account.new(account) }
+        @accounts = entity[:accounts]&.map { |account| Account.new(account) }
         @unread = entity[:unread]
-        @last_status = entity[:last_status].nil? ? nil : Mastodon::Status.new(entity[:last_status])
+        @last_status = entity[:last_status].nil? ? nil : Status.new(entity[:last_status])
       end
     end
   end
