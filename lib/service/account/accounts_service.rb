@@ -145,7 +145,11 @@ module Mastodon
       end
 
       class UpdateCredentialsBuilder
-        FORM_FIELDS = %w[display_name note avatar header attribution_domains fields_attributes].freeze
+        # Fields found in documentation but not yet on an official release version just yet
+        # attribution_domains - slated for 4.4.0
+        NOT_YET_IMPLEMENTED_FIELDS = %w[attribution_domains].freeze
+
+        FORM_FIELDS = %w[display_name note avatar header fields_attributes].freeze
         BOOL_FORM_FIELDS = %w[locked bot discoverable hide_collections indexable].freeze
         ALL_FIELDS = FORM_FIELDS + BOOL_FORM_FIELDS
 

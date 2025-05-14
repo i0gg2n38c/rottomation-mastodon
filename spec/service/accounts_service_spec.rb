@@ -31,7 +31,32 @@ require_relative '../spec_helper'
 RSpec.describe Mastodon::Service::AccountService do
   let(:logger) { Rottomation::RottomationLogger.new test_name: described_class.to_s }
   let(:admin_auth_context) { admin_auth }
+  let(:new_display_name) { get_random_string(5) }
+  let(:field_name_to_match) { 'left' }
+  let(:field_value_to_match) { 'field' }
+  let(:attribution_domains) { ['www.google.com', 'www.meta.com'] }
+  let(:field_attributes) do
+    {
+      "1": {
+        "name": field_name_to_match,
+        "value": field_value_to_match
+      },
+      "2": {
+        "name": 'Hugh',
+        "value": 'Jazz'
+      },
+      "3": {
+        "name": 'Seymore',
+        "value": 'Cox'
+      },
+      "4": {
+        "name": 'I. C.',
+        "value": 'Wiener'
+      }
+    }
+  end
 
+  # Begin Tests
   def generic_new_user_form_data
     described_class::CreateAccountFormBuilder.new
                                              .set_agreement(does_agree: true)
@@ -40,6 +65,15 @@ RSpec.describe Mastodon::Service::AccountService do
                                              .with_password(get_random_string(20))
                                              .with_locale('EN')
                                              .build
+  end
+
+  def confirm_new_account(username:)
+    logger.log_info(log: 'Fetching account by username to get its ID')
+    found_account = described_class.lookup_account(logger: logger, username: username)
+
+    logger.log_info(log: "Confirming account with user id #{found_account.id} as admin user")
+    Mastodon::Service::AdminAccountsService.confirm_account(logger: logger, admin_auth_context: admin_auth_context,
+                                                            id: found_account.id)
   end
 
   it 'can Register an account' do
@@ -54,13 +88,7 @@ RSpec.describe Mastodon::Service::AccountService do
     data = generic_new_user_form_data
     resp_context = described_class.register_account(logger: logger, auth_context: admin_auth_context,
                                                     new_user_form_data: data)
-
-    logger.log_info(log: 'Fetching account by username to get its ID')
-    found_account = described_class.lookup_account(logger: logger, username: data[:username])
-
-    logger.log_info(log: "Confirming account with user id #{found_account.id} as admin user")
-    Mastodon::Service::AdminAccountsService.confirm_account(logger: logger, admin_auth_context: admin_auth_context,
-                                                            id: found_account.id)
+    confirm_new_account(username: data[:username])
 
     logger.log_info(log: 'verifying credentials for the now activated user')
     validated_account = described_class.verify_credentials(logger: logger, auth_context: resp_context)
@@ -72,35 +100,10 @@ RSpec.describe Mastodon::Service::AccountService do
     data = generic_new_user_form_data
     resp_context = described_class.register_account(logger: logger, auth_context: admin_auth_context,
                                                     new_user_form_data: data)
+    confirm_new_account(username: data[:username])
 
-    logger.log_info(log: 'Fetching account by username to get its ID')
-    found_account = described_class.lookup_account(logger: logger, username: data[:username])
-
-    logger.log_info(log: "Confirming account with user id #{found_account.id} as admin user")
-    Mastodon::Service::AdminAccountsService.confirm_account(logger: logger, admin_auth_context: admin_auth_context,
-                                                            id: found_account.id)
-
-    new_display_name = get_random_string(5)
-    field_name_to_match = '1st'
-    field_value_to_match = 'field'
-    field_attributes = {
-      "420": {
-        "name": field_name_to_match,
-        "value": field_value_to_match
-      },
-      "69": {
-        "name": '2nd',
-        "value": 'field'
-      },
-      "1312": {
-        "name": '3rd',
-        "value": 'field'
-      },
-      "-99999999999999999999999999999999": {
-        "name": '4th',
-        "value": 'field'
-      }
-    }
+    # TODO: with_attribution_domains won't work until Mastodon 4.4.0. At the time of writing we are on version
+    # 4.3.8
     body = described_class::UpdateCredentialsBuilder.new
                                                     .with_display_name(new_display_name)
                                                     # .with_attribution_domains(['www.google.com', 'www.meta.com'])
