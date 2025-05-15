@@ -55,6 +55,7 @@ RSpec.describe Mastodon::Service::AccountService do
       }
     }
   end
+  let(:user_with_posts_username) { 'nA6Xv' }
 
   def generic_new_user_form_data
     described_class::CreateAccountFormBuilder.new
@@ -149,5 +150,20 @@ RSpec.describe Mastodon::Service::AccountService do
                                                   ids: new_users.map(&:id))
 
     expect(accounts_by_id.map(&:id)).to match_array(new_users.map(&:id))
+  end
+
+  it 'can fetch statuses for a given user id' do
+    user_with_posts = described_class.lookup_account(logger: logger, username: user_with_posts_username)
+    statuses = described_class.get_accounts_statuses(logger: logger, auth_context: admin_auth_context,
+                                                     id: user_with_posts.id)
+    expect(statuses).not_to be_empty
+
+    params = described_class::GetStatusParamBuilder.new
+                                                   .with_since_id(statuses[-3].id)
+                                                   .build
+
+    since_statuses = described_class.get_accounts_statuses(logger: logger, auth_context: admin_auth_context,
+                                                           id: user_with_posts.id, params: params)
+    expect(since_statuses.size).to eq statuses.size - 3
   end
 end

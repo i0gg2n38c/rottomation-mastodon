@@ -60,6 +60,15 @@ module Mastodon
         execute_request(logger: logger, request: req)
       end
 
+      def self.get_accounts_statuses_request(logger:, auth_context:, id:, params: nil)
+        req = MastodonAuthedRequestBuilder.new(url: "#{ACCOUNTS_URL}/#{id}/statuses", method_type: :get)
+                                          .with_header('Authorization', auth_context.token)
+                                          .with_url_params(params, condition_to_include: !params.nil?)
+                                          .build
+
+        execute_request(logger: logger, request: req)
+      end
+
       ##################################################################################################################
       # SECTION: Processing ############################################################################################
       ##################################################################################################################
@@ -84,7 +93,7 @@ module Mastodon
       def self.lookup_account(logger:, username:)
         resp = lookup_account_request(logger: logger, username: username)
         verify_response_code(logger: logger, expected: 200, response: resp)
-        Mastodon::Entity::Account.new(resp.parse_body_as_json)
+        Entity::Account.new(resp.parse_body_as_json)
       end
 
       # Verifies a user's Bearer auth token is valid
@@ -95,7 +104,7 @@ module Mastodon
       def self.verify_credentials(logger:, auth_context:)
         resp = verify_credentials_request(logger: logger, auth_context: auth_context)
         verify_response_code(logger: logger, expected: 200, response: resp)
-        Mastodon::Entity::Account.new(resp.parse_body_as_json)
+        Entity::Account.new(resp.parse_body_as_json)
       end
 
       # Updates the user entity with the provided values
@@ -107,7 +116,7 @@ module Mastodon
         resp = update_credentials_request(logger: logger, auth_context: auth_context,
                                           updated_credentials: updated_credentials)
         verify_response_code(logger: logger, expected: 200, response: resp)
-        Mastodon::Entity::Account.new(resp.parse_body_as_json)
+        Entity::Account.new(resp.parse_body_as_json)
       end
 
       # Fetches the user with the provided id
@@ -118,18 +127,30 @@ module Mastodon
       def self.get_account(logger:, auth_context:, id:)
         resp = get_account_request(logger: logger, auth_context: auth_context, id: id)
         verify_response_code(logger: logger, expected: 200, response: resp)
-        Mastodon::Entity::Account.new(resp.parse_body_as_json)
+        Entity::Account.new(resp.parse_body_as_json)
       end
 
       # Fetches the user with the provided id
       # @param logger [RottomationLogger]
       # @param auth_context [Rottomation::AuthContext] Auth context of the caller
-      # @param id [Array<int<] ids of the user we are fetching
-      # @return [Mastodon::Entity::Account] matched Account entity
+      # @param id [Array<int>] ids of the user we are fetching
+      # @return [Mastodon::Entity::Account] matched Account entities
       def self.get_accounts(logger:, auth_context:, ids:)
         resp = get_accounts_request(logger: logger, auth_context: auth_context, ids: ids)
         verify_response_code(logger: logger, expected: 200, response: resp)
-        resp.parse_body_as_json.map { |account| Mastodon::Entity::Account.new(account) }
+        resp.parse_body_as_json.map { |account| Entity::Account.new(account) }
+      end
+
+      # Fetches the user with the provided id
+      # @param logger [RottomationLogger]
+      # @param auth_context [Rottomation::AuthContext] Auth context of the caller
+      # @param id [int] ids of the user whose statuses we are fetching
+      # @param params [Hash] params to provide to the request. Build from GetStatusParamBuilder
+      # @return [Mastodon::Entity::Status] statuses for the provided user
+      def self.get_accounts_statuses(logger:, auth_context:, id:, params: nil)
+        resp = get_accounts_statuses_request(logger: logger, auth_context: auth_context, id: id, params: params)
+        verify_response_code(logger: logger, expected: 200, response: resp)
+        resp.parse_body_as_json.map { |status| Entity::Status.new(status) }
       end
 
       ##################################################################################################################
@@ -236,6 +257,39 @@ module Mastodon
           end
 
           form_data
+        end
+      end
+
+      class GetStatusParamBuilder
+        STRING_PARAMS = %w[max_id since_id min_id limit tagged].freeze
+        BOOL_PARAMS = %w[only_media exclude_replies exclude_reblogs pinned].freeze
+        ALL_PARAMS = STRING_PARAMS + BOOL_PARAMS
+
+        STRING_PARAMS.each do |param|
+          attr_reader = param
+
+          define_method("with_#{param}") do |val|
+            instance_variable_set("@#{param}", val)
+            self
+          end
+        end
+
+        BOOL_PARAMS.each do |param|
+          attr_reader = param
+
+          define_method("set_#{param}") do |val|
+            instance_variable_set("@#{param}", val)
+            self
+          end
+        end
+
+        def build
+          params = {}
+          ALL_PARAMS.each do |param|
+            val = instance_variable_get("@#{param}")
+            params[param.to_sym] = val unless val.nil?
+          end
+          params
         end
       end
     end
