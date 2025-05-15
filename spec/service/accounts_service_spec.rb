@@ -153,6 +153,9 @@ RSpec.describe Mastodon::Service::AccountService do
   end
 
   it 'can fetch statuses for a given user id' do
+    # TODO: We'll want to dynamically generate this at runtime vs relying on a constant. Update this later
+    # to do so once we add the 'Post a new status' endpoint in the Status service.
+    # See: https://docs.joinmastodon.org/methods/statuses/#create for docs for that.
     user_with_posts = described_class.lookup_account(logger: logger, username: user_with_posts_username)
     statuses = described_class.get_accounts_statuses(logger: logger, auth_context: admin_auth_context,
                                                      id: user_with_posts.id)
