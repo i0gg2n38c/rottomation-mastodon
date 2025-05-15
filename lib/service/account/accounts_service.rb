@@ -168,31 +168,10 @@ module Mastodon
         REQUIRED_FORM_DATA_BOOL_PARAM = %w[agreement].freeze
         REQUIRED_FORM_DATA_STRING_PARAMS = %w[username email password locale].freeze
         OPTIONAL_FORM_DATA_STRING_PARAMS = %w[reason date_of_birth reason].freeze
-        ALL_PARAMS = REQUIRED_FORM_DATA_STRING_PARAMS + OPTIONAL_FORM_DATA_STRING_PARAMS + REQUIRED_FORM_DATA_BOOL_PARAM
         REQUIRED_PARAMS = REQUIRED_FORM_DATA_BOOL_PARAM + REQUIRED_FORM_DATA_STRING_PARAMS
-
         construct_methods_and_readers(bool_params: REQUIRED_FORM_DATA_BOOL_PARAM,
-                                      non_bool_params: REQUIRED_FORM_DATA_STRING_PARAMS + OPTIONAL_FORM_DATA_STRING_PARAMS)
-
-        def build
-          form_data = {}
-
-          REQUIRED_PARAMS.each do |param|
-            val = instance_variable_get("@#{param}")
-            raise ArgumentError, "Missing required parameter: #{param}" if val.nil?
-
-            form_data[param.to_sym] = val
-          end
-
-          OPTIONAL_FORM_DATA_STRING_PARAMS.each do |param|
-            val = instance_variable_get("@#{param}")
-            next if val.nil?
-
-            form_data[:param] = val
-          end
-
-          form_data
-        end
+                                      non_bool_params: REQUIRED_FORM_DATA_STRING_PARAMS + OPTIONAL_FORM_DATA_STRING_PARAMS,
+                                      required_params: REQUIRED_PARAMS)
       end
 
       # Patch request for accounts/update_credentials endpoint
@@ -204,7 +183,6 @@ module Mastodon
         FORM_FIELDS = %w[display_name note avatar header fields_attributes].freeze
         BOOL_FORM_FIELDS = %w[locked bot discoverable hide_collections indexable].freeze
         ALL_FIELDS = FORM_FIELDS + BOOL_FORM_FIELDS
-
         construct_methods_and_readers(bool_params: BOOL_FORM_FIELDS, non_bool_params: FORM_FIELDS)
 
         def build
@@ -229,18 +207,7 @@ module Mastodon
       class GetStatusParamBuilder < Rottomation::HttpRequestBodyBuilder
         STRING_PARAMS = %w[max_id since_id min_id limit tagged].freeze
         BOOL_PARAMS = %w[only_media exclude_replies exclude_reblogs pinned].freeze
-        ALL_PARAMS = STRING_PARAMS + BOOL_PARAMS
-
         construct_methods_and_readers(bool_params: BOOL_PARAMS, non_bool_params: STRING_PARAMS)
-
-        def build
-          params = {}
-          ALL_PARAMS.each do |param|
-            val = instance_variable_get("@#{param}")
-            params[param.to_sym] = val unless val.nil?
-          end
-          params
-        end
       end
     end
   end
