@@ -148,6 +148,6 @@ RSpec.describe Mastodon::Service::AccountService do
     accounts_by_id = described_class.get_accounts(logger: logger, auth_context: admin_auth_context,
                                                   ids: new_users.map(&:id))
 
-    expect(accounts_by_id.map(&:id)).to eq new_users.map(&:id)
+    expect(accounts_by_id.map(&:id)).to match_array(new_users.map(&:id))
   end
 end

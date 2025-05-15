@@ -162,26 +162,26 @@ module Mastodon
             @agreement = does_agree
             self
           end
+        end
 
-          def build
-            form_data = {}
+        def build
+          form_data = {}
 
-            REQUIRED_PARAMS.each do |param|
-              val = instance_variable_get("@#{param}")
-              raise ArgumentError, "Missing required parameter: #{param}" if val.nil?
+          REQUIRED_PARAMS.each do |param|
+            val = instance_variable_get("@#{param}")
+            raise ArgumentError, "Missing required parameter: #{param}" if val.nil?
 
-              form_data[param.to_sym] = val
-            end
-
-            OPTIONAL_FORM_DATA_STRING_PARAMS.each do |param|
-              val = instance_variable_get("@#{param}")
-              next if val.nil?
-
-              form_data[:param] = val
-            end
-
-            form_data
+            form_data[param.to_sym] = val
           end
+
+          OPTIONAL_FORM_DATA_STRING_PARAMS.each do |param|
+            val = instance_variable_get("@#{param}")
+            next if val.nil?
+
+            form_data[:param] = val
+          end
+
+          form_data
         end
       end
 
@@ -231,8 +231,8 @@ module Mastodon
           end
 
           @fields_attributes&.each do |index, hash|
-            form_data["fields_attributes[#{index}][name]"] = hash[:name]
-            form_data["fields_attributes[#{index}][value]"] = hash[:value]
+            form_data["fields_attributes[#{index}][name]".to_sym] = hash[:name]
+            form_data["fields_attributes[#{index}][value]".to_sym] = hash[:value]
           end
 
           form_data
