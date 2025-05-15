@@ -50,6 +50,16 @@ module Mastodon
 
         execute_request(logger: logger, request: req)
       end
+
+      def self.get_accounts_request(logger:, auth_context:, ids:)
+        req = MastodonAuthedRequestBuilder.new(url: "#{ACCOUNTS_URL}/", method_type: :get)
+                                          .with_header('Authorization', auth_context.token)
+                                          .with_url_param('id[]', ids)
+                                          .build
+
+        execute_request(logger: logger, request: req)
+      end
+
       ##################################################################################################################
       # SECTION: Processing ############################################################################################
       ##################################################################################################################
@@ -110,6 +120,18 @@ module Mastodon
         verify_response_code(logger: logger, expected: 200, response: resp)
         Mastodon::Entity::Account.new(resp.parse_body_as_json)
       end
+
+      # Fetches the user with the provided id
+      # @param logger [RottomationLogger]
+      # @param auth_context [Rottomation::AuthContext] Auth context of the caller
+      # @param id [Array<int<] ids of the user we are fetching
+      # @return [Mastodon::Entity::Account] matched Account entity
+      def self.get_accounts(logger:, auth_context:, ids:)
+        resp = get_accounts_request(logger: logger, auth_context: auth_context, ids: ids)
+        verify_response_code(logger: logger, expected: 200, response: resp)
+        resp.parse_body_as_json.map { |account| Mastodon::Entity::Account.new(account) }
+      end
+
       ##################################################################################################################
       # SECTION: Builders ##############################################################################################
       ##################################################################################################################
@@ -163,6 +185,7 @@ module Mastodon
         end
       end
 
+      # Patch request for accounts/update_credentials endpoint
       class UpdateCredentialsBuilder
         # Fields found in documentation but not yet on an official release version just yet
         # attribution_domains - slated for 4.4.0

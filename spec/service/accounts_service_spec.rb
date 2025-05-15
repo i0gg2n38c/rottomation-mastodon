@@ -6,8 +6,8 @@ require_relative '../spec_helper'
 # ok    Register an account
 # ok    Verify account credentials
 # ok    Update account credentials
-# nd    Get account
-# nd    Get multiple accounts
+# ok    Get account
+# ok    Get multiple accounts
 # nd    Get account’s statuses
 # nd    Get account’s followers
 # nd    Get account’s following
@@ -75,6 +75,18 @@ RSpec.describe Mastodon::Service::AccountService do
                                                             id: found_account.id)
   end
 
+  def create_confirmed_account(new_user_data:)
+    described_class.register_account(logger: logger, auth_context: admin_auth_context,
+                                     new_user_form_data: new_user_data)
+    logger.log_info(log: 'Fetching account by username to get its ID')
+    created_account = described_class.lookup_account(logger: logger, username: new_user_data[:username])
+
+    logger.log_info(log: "Confirming account with user id #{created_account.id} as admin user")
+    Mastodon::Service::AdminAccountsService.confirm_account(logger: logger, admin_auth_context: admin_auth_context,
+                                                            id: created_account.id)
+    created_account
+  end
+
   # Begin Tests
   it 'can Register an account' do
     logger.log_info(log: 'Registering new account')
@@ -119,19 +131,23 @@ RSpec.describe Mastodon::Service::AccountService do
   end
 
   it 'can fetch a single account' do
-    logger.log_info(log: 'Registering new account and getting Session Cookies')
-    data = generic_new_user_form_data
-    described_class.register_account(logger: logger, auth_context: admin_auth_context,
-                                     new_user_form_data: data)
-    confirm_new_account(username: data[:username])
-
-    logger.log_info(log: 'Looking up the created account by username to get its ID')
-    fetched_account = described_class.lookup_account(logger: logger, username: data[:username])
+    created_account = create_confirmed_account(new_user_data: generic_new_user_form_data)
 
     account_by_id = described_class.get_account(logger: logger, auth_context: admin_auth_context,
-                                                id: fetched_account.id)
+                                                id: created_account.id)
 
-    expect(account_by_id.username).to eq fetched_account.username
-    expect(account_by_id.id).to eq fetched_account.id
+    expect(account_by_id.username).to eq created_account.username
+    expect(account_by_id.id).to eq created_account.id
+  end
+
+  it 'can fetch multiple accounts by id' do
+    new_users = []
+    5.times do
+      new_users << create_confirmed_account(new_user_data: generic_new_user_form_data)
+    end
+    accounts_by_id = described_class.get_accounts(logger: logger, auth_context: admin_auth_context,
+                                                  ids: new_users.map(&:id))
+
+    expect(accounts_by_id.map(&:id)).to eq new_users.map(&:id)
   end
 end
