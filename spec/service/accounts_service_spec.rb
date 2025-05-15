@@ -8,7 +8,7 @@ require_relative '../spec_helper'
 # ok    Update account credentials
 # ok    Get account
 # ok    Get multiple accounts
-# nd    Get account’s statuses
+# ok    Get account’s statuses
 # nd    Get account’s followers
 # nd    Get account’s following
 # nd    Get account’s featured tags
@@ -59,7 +59,7 @@ RSpec.describe Mastodon::Service::AccountService do
 
   def generic_new_user_form_data
     described_class::CreateAccountFormBuilder.new
-                                             .set_agreement(does_agree: true)
+                                             .set_agreement(true)
                                              .with_username(get_random_string(5))
                                              .with_email("#{get_random_string(6)}@#{get_random_string(6)}.test")
                                              .with_password(get_random_string(20))
@@ -94,6 +94,22 @@ RSpec.describe Mastodon::Service::AccountService do
     resp_context = described_class.register_account(logger: logger, auth_context: admin_auth_context,
                                                     new_user_form_data: generic_new_user_form_data)
     expect(resp_context).not_to be_nil
+  end
+
+  it 'can Register an account but using auth from other user(?)' do
+    form_data = generic_new_user_form_data
+    new_user_context = described_class.register_account(logger: logger, auth_context: admin_auth_context,
+                                                        new_user_form_data: form_data)
+    confirm_new_account(username: form_data[:username])
+    new_user_context = Mastodon::Service::AuthenticationService.get_session_cookies_for_auth_context(logger: logger,
+                                                                                                     auth_context: new_user_context)
+
+    second_user_form_data = generic_new_user_form_data
+    second_user_auth = described_class.register_account(logger: logger, auth_context: new_user_context,
+                                                        new_user_form_data: second_user_form_data)
+
+    confirm_new_account(username: second_user_form_data[:username])
+    described_class.verify_credentials(logger: logger, auth_context: second_user_auth)
   end
 
   it 'can Verify account credentials' do

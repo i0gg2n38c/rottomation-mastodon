@@ -164,26 +164,15 @@ module Mastodon
       #    ownership chain come into effect, because users aren't scoped together at all. But it's something to
       #    keep in mind.
       #  It's kinda funny that it works out that way but also there's no reason for it not to, I don't think
-      class CreateAccountFormBuilder
+      class CreateAccountFormBuilder < Rottomation::HttpRequestBodyBuilder
         REQUIRED_FORM_DATA_BOOL_PARAM = %w[agreement].freeze
         REQUIRED_FORM_DATA_STRING_PARAMS = %w[username email password locale].freeze
         OPTIONAL_FORM_DATA_STRING_PARAMS = %w[reason date_of_birth reason].freeze
-        ALL_STRING_PARAMS = REQUIRED_FORM_DATA_STRING_PARAMS + OPTIONAL_FORM_DATA_STRING_PARAMS
+        ALL_PARAMS = REQUIRED_FORM_DATA_STRING_PARAMS + OPTIONAL_FORM_DATA_STRING_PARAMS + REQUIRED_FORM_DATA_BOOL_PARAM
         REQUIRED_PARAMS = REQUIRED_FORM_DATA_BOOL_PARAM + REQUIRED_FORM_DATA_STRING_PARAMS
 
-        ALL_STRING_PARAMS.each do |param|
-          attr_reader param
-
-          define_method("with_#{param}") do |val|
-            instance_variable_set("@#{param}", val)
-            self
-          end
-
-          def set_agreement(does_agree:)
-            @agreement = does_agree
-            self
-          end
-        end
+        construct_methods_and_readers(bool_params: REQUIRED_FORM_DATA_BOOL_PARAM,
+                                      non_bool_params: REQUIRED_FORM_DATA_STRING_PARAMS + OPTIONAL_FORM_DATA_STRING_PARAMS)
 
         def build
           form_data = {}
@@ -207,7 +196,7 @@ module Mastodon
       end
 
       # Patch request for accounts/update_credentials endpoint
-      class UpdateCredentialsBuilder
+      class UpdateCredentialsBuilder < Rottomation::HttpRequestBodyBuilder
         # Fields found in documentation but not yet on an official release version just yet
         # attribution_domains - slated for 4.4.0
         NOT_YET_IMPLEMENTED_FIELDS = %w[attribution_domains].freeze
@@ -216,30 +205,7 @@ module Mastodon
         BOOL_FORM_FIELDS = %w[locked bot discoverable hide_collections indexable].freeze
         ALL_FIELDS = FORM_FIELDS + BOOL_FORM_FIELDS
 
-        FORM_FIELDS.each do |field|
-          next if field == 'fields_attributes'
-
-          attr_reader field
-
-          define_method("with_#{field}") do |val|
-            instance_variable_set("@#{field}", val)
-            self
-          end
-        end
-
-        BOOL_FORM_FIELDS.each do |field|
-          attr_reader field
-
-          define_method("set_#{field}") do |val|
-            instance_variable_set("@#{field}", val)
-            self
-          end
-        end
-
-        def with_fields_attributes(hash)
-          @fields_attributes = hash
-          self
-        end
+        construct_methods_and_readers(bool_params: BOOL_FORM_FIELDS, non_bool_params: FORM_FIELDS)
 
         def build
           form_data = {}
@@ -260,28 +226,12 @@ module Mastodon
         end
       end
 
-      class GetStatusParamBuilder
+      class GetStatusParamBuilder < Rottomation::HttpRequestBodyBuilder
         STRING_PARAMS = %w[max_id since_id min_id limit tagged].freeze
         BOOL_PARAMS = %w[only_media exclude_replies exclude_reblogs pinned].freeze
         ALL_PARAMS = STRING_PARAMS + BOOL_PARAMS
 
-        STRING_PARAMS.each do |param|
-          attr_reader = param
-
-          define_method("with_#{param}") do |val|
-            instance_variable_set("@#{param}", val)
-            self
-          end
-        end
-
-        BOOL_PARAMS.each do |param|
-          attr_reader = param
-
-          define_method("set_#{param}") do |val|
-            instance_variable_set("@#{param}", val)
-            self
-          end
-        end
+        construct_methods_and_readers(bool_params: BOOL_PARAMS, non_bool_params: STRING_PARAMS)
 
         def build
           params = {}
