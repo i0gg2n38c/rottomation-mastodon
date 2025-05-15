@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'concurrent'
 require_relative '../spec_helper'
 
 # TODO: Basic tests for the following. See: https://docs.joinmastodon.org/methods/accounts/
@@ -166,6 +167,27 @@ RSpec.describe Mastodon::Service::AccountService do
                                                   ids: new_users.map(&:id))
 
     expect(accounts_by_id.map(&:id)).to match_array(new_users.map(&:id))
+  end
+
+  it 'can fetch multiple accounts by id (but with threads!)' do
+    new_users = Concurrent::Array.new
+    # mutex = Mutex.new
+    begin
+      pool = Concurrent::FixedThreadPool.new(5)
+      40.times do
+        pool.post do
+          new_users << create_confirmed_account(new_user_data: generic_new_user_form_data)
+        end
+      end
+
+      accounts_by_id = described_class.get_accounts(logger: logger, auth_context: admin_auth_context,
+                                                    ids: new_users.map(&:id))
+
+      expect(accounts_by_id.map(&:id)).to match_array(new_users.to_a.map(&:id))
+    ensure
+      pool.shutdown
+      pool.wait_for_termination
+    end
   end
 
   it 'can fetch statuses for a given user id' do

@@ -5,21 +5,19 @@ module Mastodon
     # Service class for performing Admin actions for accounts
     class AdminAccountsService < MastodonWebService
       ADMIN_ACCOUNTS_BASE_URL = "#{Mastodon.instance_url}/admin/accounts"
-      ADMIN_ACCOUNTS_BY_ID_URL = "#{ADMIN_ACCOUNTS_BASE_URL}/:id"
-      ADMIN_ACCOUNTS_CONFIRMATION_URL = "#{ADMIN_ACCOUNTS_BY_ID_URL}/confirmation"
 
       ##################################################################################################################
       # SECTION: Request ###############################################################################################
       ##################################################################################################################
       def self.confirm_account_request(logger:, admin_auth_context:, id:)
-        req = Mastodon::MastodonAuthedRequestBuilder.new(url: ADMIN_ACCOUNTS_CONFIRMATION_URL.gsub(':id', id),
-                                                         method_type: :post)
-                                                    .with_form_body({
-                                                                      '_method' => 'post',
-                                                                      'authenticity_token' => admin_auth_context.csrf
-                                                                    })
-                                                    .with_session_cookies(admin_auth_context.session_cookies)
-                                                    .build
+        req = MastodonAuthedRequestBuilder.new(url: "#{ADMIN_ACCOUNTS_BASE_URL}/#{id}/confirmation",
+                                               method_type: :post, auth_context: admin_auth_context)
+                                          .with_form_body({
+                                                            '_method' => 'post',
+                                                            'authenticity_token' => admin_auth_context.csrf
+                                                          })
+                                          .only_cookies
+                                          .build
 
         execute_request(logger: logger, request: req)
       end
@@ -28,7 +26,7 @@ module Mastodon
       # SECTION: Processing ############################################################################################
       ##################################################################################################################
       def self.confirm_account(logger:, admin_auth_context:, id:)
-        logger.log_info(log: "Fetching CSRF token for #{ADMIN_ACCOUNTS_BY_ID_URL.gsub(':id', id)}")
+        logger.log_info(log: "Fetching CSRF token for #{ADMIN_ACCOUNTS_BASE_URL}/#{id}")
         csrf_resp = get_csrf_for_approve_account_request(logger: logger,
                                                          admin_auth_context: admin_auth_context,
                                                          id: id)
@@ -45,11 +43,11 @@ module Mastodon
       # SECTION: Private Methods #######################################################################################
       ##################################################################################################################
       def self.get_csrf_for_approve_account_request(logger:, admin_auth_context:, id:)
-        execute_request(logger: logger,
-                        request: Mastodon::MastodonAuthedRequestBuilder.new(
-                          url: ADMIN_ACCOUNTS_BY_ID_URL.gsub(':id', id),
-                          method_type: :get
-                        ).with_session_cookies(admin_auth_context.session_cookies).build)
+        req = Mastodon::MastodonAuthedRequestBuilder.new(url: "#{ADMIN_ACCOUNTS_BASE_URL}/#{id}", method_type: :get,
+                                                         auth_context: admin_auth_context)
+                                                    .only_cookies
+                                                    .build
+        execute_request(logger: logger, request: req)
       end
 
       private_class_method :get_csrf_for_approve_account_request

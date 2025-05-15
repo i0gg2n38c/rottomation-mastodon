@@ -10,62 +10,54 @@ module Mastodon
       # SECTION: Request ###############################################################################################
       ##################################################################################################################
       def self.register_account_request(logger:, auth_context:, new_user_form_data:)
-        req = MastodonAuthedRequestBuilder.new(url: ACCOUNTS_URL, method_type: :post)
+        req = MastodonAuthedRequestBuilder.new(url: ACCOUNTS_URL, method_type: :post, auth_context: auth_context)
                                           .with_form_body(new_user_form_data)
-                                          .with_auth(auth_context: auth_context)
                                           .build
-
         execute_request(logger: logger, request: req)
       end
 
       def self.lookup_account_request(logger:, username:)
         req = Rottomation::HttpRequestBuilder.new(url: "#{ACCOUNTS_URL}/lookup", method_type: :get)
                                              .with_url_param('acct', username)
-                                             .with_header('accept', 'application/json')
                                              .build
         execute_request(logger: logger, request: req)
       end
 
       def self.verify_credentials_request(logger:, auth_context:)
-        req = MastodonAuthedRequestBuilder.new(url: "#{ACCOUNTS_URL}/verify_credentials", method_type: :get)
-                                          .with_header('Authorization', auth_context.token)
+        req = MastodonAuthedRequestBuilder.new(url: "#{ACCOUNTS_URL}/verify_credentials", method_type: :get,
+                                               auth_context: auth_context)
                                           .build
-
         execute_request(logger: logger, request: req)
       end
 
       def self.update_credentials_request(logger:, auth_context:, updated_credentials:)
-        req = MastodonAuthedRequestBuilder.new(url: "#{ACCOUNTS_URL}/update_credentials", method_type: :patch)
-                                          .with_header('Authorization', auth_context.token)
+        req = MastodonAuthedRequestBuilder.new(url: "#{ACCOUNTS_URL}/update_credentials", method_type: :patch,
+                                               auth_context: auth_context)
                                           .with_form_body(updated_credentials)
                                           .build
-
         execute_request(logger: logger, request: req)
       end
 
       def self.get_account_request(logger:, auth_context:, id:)
-        req = MastodonAuthedRequestBuilder.new(url: "#{ACCOUNTS_URL}/#{id}", method_type: :get)
-                                          .with_header('Authorization', auth_context.token)
+        req = MastodonAuthedRequestBuilder.new(url: "#{ACCOUNTS_URL}/#{id}", method_type: :get,
+                                               auth_context: auth_context)
                                           .build
-
         execute_request(logger: logger, request: req)
       end
 
       def self.get_accounts_request(logger:, auth_context:, ids:)
-        req = MastodonAuthedRequestBuilder.new(url: "#{ACCOUNTS_URL}/", method_type: :get)
-                                          .with_header('Authorization', auth_context.token)
+        req = MastodonAuthedRequestBuilder.new(url: "#{ACCOUNTS_URL}/", method_type: :get,
+                                               auth_context: auth_context)
                                           .with_url_param('id[]', ids)
                                           .build
-
         execute_request(logger: logger, request: req)
       end
 
       def self.get_accounts_statuses_request(logger:, auth_context:, id:, params: nil)
-        req = MastodonAuthedRequestBuilder.new(url: "#{ACCOUNTS_URL}/#{id}/statuses", method_type: :get)
-                                          .with_header('Authorization', auth_context.token)
+        req = MastodonAuthedRequestBuilder.new(url: "#{ACCOUNTS_URL}/#{id}/statuses", method_type: :get,
+                                               auth_context: auth_context)
                                           .with_url_params(params, condition_to_include: !params.nil?)
                                           .build
-
         execute_request(logger: logger, request: req)
       end
 
