@@ -187,7 +187,7 @@ module Mastodon
       # @param params [Hash] Optional: params to provide to the request. Build from GetFollowersParamBuilder
       # @return [List<Mastodon::Entity::Account>] accounts followed by the given user
       def self.get_accounts_following(logger:, auth_context:, id:, params: nil)
-        resp = get_accounts_followers_request(logger: logger, auth_context: auth_context, id: id, params: params)
+        resp = get_accounts_following_request(logger: logger, auth_context: auth_context, id: id, params: params)
         verify_response_code(logger: logger, expected: 200, response: resp)
         resp.parse_body_as_json.map { |follower| Entity::Account.new(follower) }
       end

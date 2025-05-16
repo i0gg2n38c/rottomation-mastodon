@@ -211,35 +211,89 @@ RSpec.describe Mastodon::Service::AccountService do
   end
 
   it 'can fetch followers for a given user id' do
-    # TODO: We'll want to dynamically generate this at runtime vs relying on a constant. Update this later
-    user_with_followers = described_class.lookup_account(logger: logger, username: user_with_followers_username)
-    followers = described_class.get_accounts_followers(logger: logger, auth_context: admin_auth_context,
-                                                       id: user_with_followers.id)
-    expect(followers).not_to be_empty
+    logger.log_info(log: 'Creating our test user')
+    user_with_followers = generic_new_user_form_data
+    user_with_followers_account = create_confirmed_account(new_user_data: user_with_followers)
 
+    logger.log_info(log: 'Creating 10 new accounts, logging in with them, and following our test user')
+    followers_user_data = Concurrent::Array.new
+    begin
+      pool = Concurrent::FixedThreadPool.new(5)
+
+      10.times do
+        pool.post do
+          data = generic_new_user_form_data
+          followers_user_data << data
+          create_confirmed_account(new_user_data: data)
+          new_user_auth_context = Mastodon::Service::AuthenticationService.sign_in(logger: logger,
+                                                                                   username: data[:email],
+                                                                                   password: data[:password])
+          described_class.follow_account(logger: logger, auth_context: new_user_auth_context,
+                                         id: user_with_followers_account.id)
+        end
+      end
+    ensure
+      pool.shutdown
+      pool.wait_for_termination
+    end
+
+    logger.log_info(log: 'Fetching followers for our test user')
+    followers = described_class.get_accounts_followers(logger: logger, auth_context: admin_auth_context,
+                                                       id: user_with_followers_account.id)
+    logger.log_info(log: 'Verifying we see all 10 followers')
+    expect(followers.size).to eq 10
+
+    limit = 2
+    logger.log_info(log: "Fetching followers again with limit: #{limit}")
     params = described_class::GetFollowersParamBuilder.new
-                                                      .with_limit(2)
+                                                      .with_limit(limit)
                                                       .build
 
     followers = described_class.get_accounts_followers(logger: logger, auth_context: admin_auth_context,
-                                                       id: user_with_followers.id, params: params)
-    expect(followers.size).to eq 2
+                                                       id: user_with_followers_account.id, params: params)
+    logger.log_info(log: "Verifying returned followers have only #{limit} returned accounts")
+    expect(followers.size).to eq limit
   end
 
-  it 'can fetch followers for a given user id' do
-    # TODO: We'll want to dynamically generate this at runtime vs relying on a constant. Update this later
-    user_with_followers = described_class.lookup_account(logger: logger, username: user_with_followers_username)
-    followers = described_class.get_accounts_following(logger: logger, auth_context: admin_auth_context,
-                                                       id: user_with_followers.id)
-    expect(followers).not_to be_empty
+  it 'can fetch followed users for a given user id' do
+    logger.log_info(log: 'Creating a test user')
+    test_user = generic_new_user_form_data
+    test_user_account = create_confirmed_account(new_user_data: test_user)
+    test_user_auth_context = Mastodon::Service::AuthenticationService.sign_in(logger: logger,
+                                                                              username: test_user[:email],
+                                                                              password: test_user[:password])
 
+    logger.log_info(log: 'Creating 10 new users and following them with our test user')
+    number_of_users = 10
+    begin
+      pool = Concurrent::FixedThreadPool.new(5)
+      number_of_users.times do
+        pool.post do
+          data = generic_new_user_form_data
+          data_account = create_confirmed_account(new_user_data: data)
+          described_class.follow_account(logger: logger, auth_context: test_user_auth_context,
+                                         id: data_account.id)
+        end
+      end
+    ensure
+      pool.shutdown
+      pool.wait_for_termination
+    end
+
+    logger.log_info(log: "Fetching the followed list of our user and verifying we find #{number_of_users} accounts")
+    followers = described_class.get_accounts_following(logger: logger, auth_context: admin_auth_context,
+                                                       id: test_user_account.id)
+    expect(followers.size).to eq number_of_users
+
+    limit = 3
+    logger.log_info(log: "Fetching the followed list with limit: #{limit}")
     params = described_class::GetFollowersParamBuilder.new
-                                                      .with_limit(2)
+                                                      .with_limit(limit)
                                                       .build
-
     followers = described_class.get_accounts_following(logger: logger, auth_context: admin_auth_context,
-                                                       id: user_with_followers.id, params: params)
-    expect(followers.size).to eq 2
+                                                       id: test_user_account.id, params: params)
+    logger.log_info(log: "Verifying we only get #{limit} users returned")
+    expect(followers.size).to eq limit
   end
 
   it 'can follow other accounts' do
@@ -262,7 +316,8 @@ RSpec.describe Mastodon::Service::AccountService do
     expect(followed_account.id).to eq user_who_is_followed_account.id
 
     logger.log_info(log: 'Fetching the followers list')
-    followers_for_followed_account = described_class.get_accounts_followers(logger: logger, auth_context: admin_auth_context,
+    followers_for_followed_account = described_class.get_accounts_followers(logger: logger,
+                                                                            auth_context: admin_auth_context,
                                                                             id: user_who_is_followed_account.id)
     logger.log_info(log: 'Verifying we only get 1 follower and the follower\' id matches the expected')
     expect(followers_for_followed_account.size).to be 1
