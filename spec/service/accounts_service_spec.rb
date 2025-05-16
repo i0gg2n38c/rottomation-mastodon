@@ -57,6 +57,8 @@ RSpec.describe Mastodon::Service::AccountService do
     }
   end
   let(:user_with_posts_username) { 'nA6Xv' }
+  let(:user_with_followers_username) { 'dWRm8' }
+  let(:user_following_other_users_username) { 'dWRm8' }
 
   def generic_new_user_form_data
     described_class::CreateAccountFormBuilder.new
@@ -206,5 +208,41 @@ RSpec.describe Mastodon::Service::AccountService do
     since_statuses = described_class.get_accounts_statuses(logger: logger, auth_context: admin_auth_context,
                                                            id: user_with_posts.id, params: params)
     expect(since_statuses.size).to eq statuses.size - 3
+  end
+
+  it 'can fetch followers for a given user id' do
+    # TODO: We'll want to dynamically generate this at runtime vs relying on a constant. Update this later
+    # to do so once we add the 'Post a new status' endpoint in the Status service.
+    # See: https://docs.joinmastodon.org/methods/statuses/#create for docs for that.
+    user_with_followers = described_class.lookup_account(logger: logger, username: user_with_followers_username)
+    followers = described_class.get_accounts_followers(logger: logger, auth_context: admin_auth_context,
+                                                       id: user_with_followers.id)
+    expect(followers).not_to be_empty
+
+    params = described_class::GetFollowersParamBuilder.new
+                                                      .with_limit(2)
+                                                      .build
+
+    followers = described_class.get_accounts_followers(logger: logger, auth_context: admin_auth_context,
+                                                       id: user_with_followers.id, params: params)
+    expect(followers.size).to eq 2
+  end
+
+  it 'can fetch followers for a given user id' do
+    # TODO: We'll want to dynamically generate this at runtime vs relying on a constant. Update this later
+    # to do so once we add the 'Post a new status' endpoint in the Status service.
+    # See: https://docs.joinmastodon.org/methods/statuses/#create for docs for that.
+    user_with_followers = described_class.lookup_account(logger: logger, username: user_with_followers_username)
+    followers = described_class.get_accounts_following(logger: logger, auth_context: admin_auth_context,
+                                                       id: user_with_followers.id)
+    expect(followers).not_to be_empty
+
+    params = described_class::GetFollowersParamBuilder.new
+                                                      .with_limit(2)
+                                                      .build
+
+    followers = described_class.get_accounts_following(logger: logger, auth_context: admin_auth_context,
+                                                       id: user_with_followers.id, params: params)
+    expect(followers.size).to eq 2
   end
 end
