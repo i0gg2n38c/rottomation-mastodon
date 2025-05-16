@@ -76,6 +76,14 @@ module Mastodon
                                           .build
         execute_request(logger: logger, request: req)
       end
+
+      def self.follow_account_request(logger:, auth_context:, id:, params: nil)
+        req = MastodonAuthedRequestBuilder.new(url: "#{ACCOUNTS_URL}/#{id}/follow", method_type: :post,
+                                               auth_context: auth_context)
+                                          .with_url_params(params, condition_to_include: !params.nil?)
+                                          .build
+        execute_request(logger: logger, request: req)
+      end
       ##################################################################################################################
       # SECTION: Processing ############################################################################################
       ##################################################################################################################
@@ -152,7 +160,7 @@ module Mastodon
       # @param logger [RottomationLogger]
       # @param auth_context [Rottomation::AuthContext] Auth context of the caller
       # @param id [int] ids of the user whose statuses we are fetching
-      # @param params [Hash] params to provide to the request. Build from GetStatusParamBuilder
+      # @param params [Hash] Optional: params to provide to the request. Build from GetStatusParamBuilder
       # @return [Mastodon::Entity::Status] statuses for the provided user
       def self.get_accounts_statuses(logger:, auth_context:, id:, params: nil)
         resp = get_accounts_statuses_request(logger: logger, auth_context: auth_context, id: id, params: params)
@@ -164,7 +172,7 @@ module Mastodon
       # @param logger [RottomationLogger]
       # @param auth_context [Rottomation::AuthContext] Auth context of the caller
       # @param id [int] ids of the user whose statuses we are fetching
-      # @param params [Hash] params to provide to the request. Build from GetFollowersParamBuilder
+      # @param params [Hash] Optional: params to provide to the request. Build from GetFollowersParamBuilder
       # @return [List<Mastodon::Entity::Account>] followers of the given user
       def self.get_accounts_followers(logger:, auth_context:, id:, params: nil)
         resp = get_accounts_followers_request(logger: logger, auth_context: auth_context, id: id, params: params)
@@ -176,12 +184,24 @@ module Mastodon
       # @param logger [RottomationLogger]
       # @param auth_context [Rottomation::AuthContext] Auth context of the caller
       # @param id [int] ids of the user whose statuses we are fetching
-      # @param params [Hash] params to provide to the request. Build from GetFollowersParamBuilder
+      # @param params [Hash] Optional: params to provide to the request. Build from GetFollowersParamBuilder
       # @return [List<Mastodon::Entity::Account>] accounts followed by the given user
       def self.get_accounts_following(logger:, auth_context:, id:, params: nil)
         resp = get_accounts_followers_request(logger: logger, auth_context: auth_context, id: id, params: params)
         verify_response_code(logger: logger, expected: 200, response: resp)
         resp.parse_body_as_json.map { |follower| Entity::Account.new(follower) }
+      end
+
+      # Follows the account with the provided id
+      # @param logger [RottomationLogger]
+      # @param auth_context [Rottomation::AuthContext] Auth context of the caller
+      # @param id [int] id of the user whom is being followed 😈
+      # @param params [Hash] Optional: params to provide to the request. Build from FollowUserParamBulder
+      # @return [Mastodon::Entity::Account] account followed by the given user
+      def self.follow_account(logger:, auth_context:, id:, params: nil)
+        resp = follow_account_request(logger: logger, auth_context: auth_context, id: id, params: params)
+        verify_response_code(logger: logger, expected: 200, response: resp)
+        Entity::Account.new(resp.parse_body_as_json)
       end
 
       ##################################################################################################################
@@ -235,15 +255,24 @@ module Mastodon
         end
       end
 
+      # Request body for getting statuses of a user
       class GetStatusParamBuilder < Rottomation::HttpRequestBodyBuilder
         STRING_PARAMS = %w[max_id since_id min_id limit tagged].freeze
         BOOL_PARAMS = %w[only_media exclude_replies exclude_reblogs pinned].freeze
         construct_methods_and_readers(bool_params: BOOL_PARAMS, non_bool_params: STRING_PARAMS)
       end
 
+      # Url Param Builder for getting followers/following
       class GetFollowersParamBuilder < Rottomation::HttpRequestBodyBuilder
         PARAMS = %w[max_id since_id min_id limit].freeze
         construct_methods_and_readers(non_bool_params: PARAMS)
+      end
+
+      # Url params for optional values when following an account.
+      class FollowUserParamBulder < Rottomation::HttpRequestBodyBuilder
+        BOOL_PARAMS = %w[reblogs notify].freeze
+        NON_BOOL_PARAMS = %w[languages].freeze
+        construct_methods_and_readers(bool_params: BOOL_PARAMS, non_bool_params: NON_BOOL_PARAMS)
       end
     end
   end

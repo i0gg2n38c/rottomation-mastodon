@@ -10,11 +10,11 @@ require_relative '../spec_helper'
 # ok    Get account
 # ok    Get multiple accounts
 # ok    Get account’s statuses
-# nd    Get account’s followers
-# nd    Get account’s following
+# ok    Get account’s followers
+# ok    Get account’s following
 # nd    Get account’s featured tags
 # nd    Get lists containing this account
-# nd    Follow account
+# ok    Follow account
 # nd    Unfollow account
 # nd    Remove account from followers
 # nd    Block account
@@ -240,5 +240,32 @@ RSpec.describe Mastodon::Service::AccountService do
     followers = described_class.get_accounts_following(logger: logger, auth_context: admin_auth_context,
                                                        id: user_with_followers.id, params: params)
     expect(followers.size).to eq 2
+  end
+
+  it 'can follow other accounts' do
+    logger.log_info(log: 'Creating two users')
+    user_who_follows = generic_new_user_form_data
+    user_who_is_followed = generic_new_user_form_data
+    user_who_follows_account = create_confirmed_account(new_user_data: user_who_follows)
+    user_who_is_followed_account = create_confirmed_account(new_user_data: user_who_is_followed)
+
+    logger.log_info(log: 'Getting login session for the follower user')
+    user_who_follows_context = Mastodon::Service::AuthenticationService.sign_in(logger: logger,
+                                                                                username: user_who_follows[:email],
+                                                                                password: user_who_follows[:password])
+
+    logger.log_info(log: "Following user #{user_who_is_followed[:email]} with id: #{user_who_is_followed_account.id}")
+    followed_account = described_class.follow_account(logger: logger, auth_context: user_who_follows_context,
+                                                      id: user_who_is_followed_account.id)
+
+    logger.log_info(log: 'Verifying returned account id matches the expected id')
+    expect(followed_account.id).to eq user_who_is_followed_account.id
+
+    logger.log_info(log: 'Fetching the followers list')
+    followers_for_followed_account = described_class.get_accounts_followers(logger: logger, auth_context: admin_auth_context,
+                                                                            id: user_who_is_followed_account.id)
+    logger.log_info(log: 'Verifying we only get 1 follower and the follower\' id matches the expected')
+    expect(followers_for_followed_account.size).to be 1
+    expect(followers_for_followed_account.map(&:id)[0]).to eq user_who_follows_account.id
   end
 end
