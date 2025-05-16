@@ -137,7 +137,7 @@ module Mastodon
         Entity::Account.new(resp.parse_body_as_json)
       end
 
-      # Fetches the user with the provided id
+      # Fetches the users with the provided ids
       # @param logger [RottomationLogger]
       # @param auth_context [Rottomation::AuthContext] Auth context of the caller
       # @param id [Array<int>] ids of the user we are fetching
@@ -148,7 +148,7 @@ module Mastodon
         resp.parse_body_as_json.map { |account| Entity::Account.new(account) }
       end
 
-      # Fetches the user with the provided id
+      # Fetches the statuses user with the provided id
       # @param logger [RottomationLogger]
       # @param auth_context [Rottomation::AuthContext] Auth context of the caller
       # @param id [int] ids of the user whose statuses we are fetching
@@ -160,7 +160,7 @@ module Mastodon
         resp.parse_body_as_json.map { |status| Entity::Status.new(status) }
       end
 
-      # Fetches the user with the provided id
+      # Fetches the followers of the user with the provided id
       # @param logger [RottomationLogger]
       # @param auth_context [Rottomation::AuthContext] Auth context of the caller
       # @param id [int] ids of the user whose statuses we are fetching
@@ -172,7 +172,7 @@ module Mastodon
         resp.parse_body_as_json.map { |follower| Entity::Account.new(follower) }
       end
 
-      # Fetches the user with the provided id
+      # Fetches the following of the user with the provided id
       # @param logger [RottomationLogger]
       # @param auth_context [Rottomation::AuthContext] Auth context of the caller
       # @param id [int] ids of the user whose statuses we are fetching
