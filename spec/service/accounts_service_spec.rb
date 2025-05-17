@@ -333,4 +333,47 @@ RSpec.describe Mastodon::Service::AccountService do
                                                             id: test_user_account.id)
     expect(followed_users.size).to eq number_of_users - number_of_users_to_unfollow
   end
+
+  it 'can remove followers from an account' do
+    logger.log_info(log: 'Creating a test users and having them follow one specific user')
+    test_user_data = generic_new_user_form_data
+    test_user_account = create_confirmed_account(new_user_data: test_user_data)
+    test_user_auth_context = Mastodon::Service::AuthenticationService.sign_in(logger: logger,
+                                                                              username: test_user_data[:email],
+                                                                              password: test_user_data[:password])
+
+    users_following_test_user = []
+    number_of_users = 5
+    begin
+      pool = Concurrent::FixedThreadPool.new(5)
+      number_of_users.times do
+        pool.post do
+          new_user_data = generic_new_user_form_data
+          new_user_account = create_confirmed_account(new_user_data: new_user_data)
+          new_user_auth_context = Mastodon::Service::AuthenticationService.sign_in(logger: logger,
+                                                                                   username: new_user_data[:email],
+                                                                                   password: new_user_data[:password])
+          described_class.follow_account(logger: logger, auth_context: new_user_auth_context, id: test_user_account.id)
+          users_following_test_user << new_user_account
+        end
+      end
+    ensure
+      pool.shutdown
+      pool.wait_for_termination
+    end
+
+    logger.log_info(log: 'Removing all followers')
+    users_following_test_user.each do |user_following_test_user|
+      described_class.remove_from_followers(logger: logger, auth_context: test_user_auth_context,
+                                            id: user_following_test_user.id)
+    end
+
+    logger.log_info(log: 'Verify test user has no followers')
+    users_following_test_user = described_class.get_accounts_followers(logger: logger,
+                                                                       auth_context: admin_auth_context,
+                                                                       id: test_user_account.id)
+
+    logger.log_info(log: 'Verify no users are left following the test user')
+    expect(users_following_test_user.size).to eq 0
+  end
 end

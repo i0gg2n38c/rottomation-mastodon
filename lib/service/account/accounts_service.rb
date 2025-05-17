@@ -92,6 +92,13 @@ module Mastodon
         execute_request(logger: logger, request: req)
       end
 
+      def self.remove_from_followers_request(logger:, auth_context:, id:)
+        req = MastodonAuthedRequestBuilder.new(url: "#{ACCOUNTS_URL}/#{id}/remove_from_followers", method_type: :post,
+                                               auth_context: auth_context)
+                                          .build
+        execute_request(logger: logger, request: req)
+      end
+
       ##################################################################################################################
       # SECTION: Processing ############################################################################################
       ##################################################################################################################
@@ -219,6 +226,17 @@ module Mastodon
       # @return [Mastodon::Entity::Account] account followed by the given user
       def self.unfollow_account(logger:, auth_context:, id:)
         resp = unfollow_account_request(logger: logger, auth_context: auth_context, id: id)
+        verify_response_code(logger: logger, expected: 200, response: resp)
+        Entity::Account.new(resp.parse_body_as_json)
+      end
+
+      # Follows the account with the provided id
+      # @param logger [RottomationLogger]
+      # @param auth_context [Rottomation::AuthContext] Auth context of the caller
+      # @param id [int] id of the user whom is being unfollowed
+      # @return [Mastodon::Entity::Account] account followed by the given user
+      def self.remove_from_followers(logger:, auth_context:, id:)
+        resp = remove_from_followers_request(logger: logger, auth_context: auth_context, id: id)
         verify_response_code(logger: logger, expected: 200, response: resp)
         Entity::Account.new(resp.parse_body_as_json)
       end
