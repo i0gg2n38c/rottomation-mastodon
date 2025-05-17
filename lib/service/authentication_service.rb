@@ -33,7 +33,7 @@ module Mastodon
                                              .with_session_cookies(cookies)
                                              .build
         resp = execute_request(logger: logger, request: req)
-        verify_response_code(logger: logger, expected: 302, response: resp)
+        verify_response_code(logger: logger, expected: [200, 302], response: resp)
 
         cookies = cookies.merge(resp.cookies)
 

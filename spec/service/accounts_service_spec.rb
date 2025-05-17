@@ -323,4 +323,45 @@ RSpec.describe Mastodon::Service::AccountService do
     expect(followers_for_followed_account.size).to be 1
     expect(followers_for_followed_account.map(&:id)[0]).to eq user_who_follows_account.id
   end
+
+  it 'can unfollow an account' do
+    logger.log_info(log: 'Creating some users')
+    test_user = generic_new_user_form_data
+    test_user_account = create_confirmed_account(new_user_data: test_user)
+    test_user_auth_context = Mastodon::Service::AuthenticationService.sign_in(logger: logger,
+                                                                              username: test_user[:email],
+                                                                              password: test_user[:password])
+
+    number_of_users = 10
+    users_followed = []
+    begin
+      pool = Concurrent::FixedThreadPool.new(5)
+      number_of_users.times do
+        pool.post do
+          new_user = generic_new_user_form_data
+          new_user_account = create_confirmed_account(new_user_data: new_user)
+          users_followed << new_user_account
+          logger.log_info(log: "Following user: [#{new_user_account.username}:#{new_user_account.id}]")
+          described_class.follow_account(logger: logger,
+                                         auth_context: test_user_auth_context,
+                                         id: new_user_account.id)
+        end
+      end
+    ensure
+      pool.shutdown
+      pool.wait_for_termination
+    end
+
+    number_of_users_to_unfollow = 5
+    logger.log_info(log: "Unfollowing #{number_of_users_to_unfollow} users")
+    users_followed.take(number_of_users_to_unfollow).each do |user|
+      logger.log_info(log: "Unfollowing user: [#{user.username}:#{user.id}]")
+      described_class.unfollow_account(logger: logger, auth_context: test_user_auth_context, id: user.id)
+    end
+
+    followed_users = described_class.get_accounts_following(logger: logger,
+                                                            auth_context: test_user_auth_context,
+                                                            id: test_user_account.id)
+    expect(followed_users.size).to eq number_of_users - number_of_users_to_unfollow
+  end
 end
