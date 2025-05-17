@@ -16,7 +16,7 @@ require_relative '../spec_helper'
 # nd    Get lists containing this account
 # ok    Follow account
 # ok    Unfollow account
-# nd    Remove account from followers
+# ok    Remove account from followers
 # nd    Block account
 # nd    Unblock account
 # nd    Mute account
@@ -302,7 +302,7 @@ RSpec.describe Mastodon::Service::AccountService do
                                                                               password: test_user[:password])
 
     number_of_users = 10
-    users_followed = []
+    users_followed = Concurrent::Array.new
     begin
       pool = Concurrent::FixedThreadPool.new(5)
       number_of_users.times do
@@ -342,7 +342,7 @@ RSpec.describe Mastodon::Service::AccountService do
                                                                               username: test_user_data[:email],
                                                                               password: test_user_data[:password])
 
-    users_following_test_user = []
+    users_following_test_user = Concurrent::Array.new
     number_of_users = 5
     begin
       pool = Concurrent::FixedThreadPool.new(5)
