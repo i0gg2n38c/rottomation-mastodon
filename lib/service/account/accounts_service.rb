@@ -233,7 +233,7 @@ module Mastodon
       # Follows the account with the provided id
       # @param logger [RottomationLogger]
       # @param auth_context [Rottomation::AuthContext] Auth context of the caller
-      # @param id [int] id of the user whom is being unfollowed
+      # @param id [int] id of the user whom is being removed from the followers list
       # @return [Mastodon::Entity::Account] account followed by the given user
       def self.remove_from_followers(logger:, auth_context:, id:)
         resp = remove_from_followers_request(logger: logger, auth_context: auth_context, id: id)
@@ -246,12 +246,6 @@ module Mastodon
       ##################################################################################################################
 
       # Builder for the form body fields for registering a new account.
-      # Conventionally:
-      #   This endpoint is meant to be using the Bearer token for an OAuth application. But it turns out that
-      #   Mastodon just needs a valid Bearer token in general. I don't think this should make any sort of weird
-      #    ownership chain come into effect, because users aren't scoped together at all. But it's something to
-      #    keep in mind.
-      #  It's kinda funny that it works out that way but also there's no reason for it not to, I don't think
       class CreateAccountFormBuilder < Rottomation::HttpRequestBodyBuilder
         REQUIRED_FORM_DATA_BOOL_PARAM = %w[agreement].freeze
         REQUIRED_FORM_DATA_STRING_PARAMS = %w[username email password locale].freeze
