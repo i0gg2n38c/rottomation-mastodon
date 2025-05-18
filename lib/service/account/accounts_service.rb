@@ -99,6 +99,16 @@ module Mastodon
         execute_request(logger: logger, request: req)
       end
 
+      def self.search_request(logger:, auth_context:, params:)
+        raise ArgumentError, "required param 'q' was nil. Provided params: #{params}" if params[:q].nil?
+
+        req = MastodonAuthedRequestBuilder.new(url: "#{ACCOUNTS_URL}/search", method_type: :get,
+                                               auth_context: auth_context)
+                                          .with_url_params(params, condition_to_include: !params.nil?)
+                                          .build
+        execute_request(logger: logger, request: req)
+      end
+
       ##################################################################################################################
       # SECTION: Processing ############################################################################################
       ##################################################################################################################
@@ -241,6 +251,19 @@ module Mastodon
         Entity::Account.new(resp.parse_body_as_json)
       end
 
+      # Searches for accounts that match with the provided query
+      # @param logger [RottomationLogger]
+      # @param auth_context [Rottomation::AuthContext] Auth context of the caller
+      # @param query [String] query for the account search we are performing
+      # @param params [Hash] additional params we are providing to search for the user
+      # @return [Mastodon::Entity::Account] account followed by the given user
+      def self.search(logger:, auth_context:, query:, params: {})
+        params[:q] = query
+        resp = search_request(logger: logger, auth_context: auth_context, params: params)
+        verify_response_code(logger: logger, expected: 200, response: resp)
+        resp.parse_body_as_json.map { |account| Entity::Account.new(account) }
+      end
+
       ##################################################################################################################
       # SECTION: Builders ##############################################################################################
       ##################################################################################################################
@@ -300,9 +323,16 @@ module Mastodon
       end
 
       # Url params for optional values when following an account.
-      class FollowUserParamBulder < Rottomation::HttpRequestBodyBuilder
+      class FollowUserParamBuilder < Rottomation::HttpRequestBodyBuilder
         BOOL_PARAMS = %w[reblogs notify].freeze
         NON_BOOL_PARAMS = %w[languages].freeze
+        construct_methods_and_readers(bool_params: BOOL_PARAMS, non_bool_params: NON_BOOL_PARAMS)
+      end
+
+      # Url params for optional values when searching for an account
+      class SearchAccountParamBuilder < Rottomation::HttpRequestBodyBuilder
+        BOOL_PARAMS = %w[resolve following].freeze
+        NON_BOOL_PARAMS = %w[limit offset].freeze
         construct_methods_and_readers(bool_params: BOOL_PARAMS, non_bool_params: NON_BOOL_PARAMS)
       end
     end

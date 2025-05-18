@@ -26,8 +26,8 @@ require_relative '../spec_helper'
 # nd    Set private note on profile
 # nd    Check relationships to other accounts
 # nd    Find familiar followers
-# nd    Search for matching accounts
-# nd    Lookup account ID from Webfinger address
+# ok    Search for matching accounts
+# ok    Lookup account ID from Webfinger address
 
 RSpec.describe Mastodon::Service::AccountService do
   let(:logger) { Rottomation::RottomationLogger.new test_name: described_class.to_s }
@@ -375,5 +375,37 @@ RSpec.describe Mastodon::Service::AccountService do
 
     logger.log_info(log: 'Verify no users are left following the test user')
     expect(users_following_test_user.size).to eq 0
+  end
+
+  it 'can search accounts' do
+    logger.log_info(log: 'Creating a new user to search for')
+    user_to_search_for = generic_new_user_form_data
+    user_to_search_for_account = create_confirmed_account(new_user_data: user_to_search_for)
+    user_to_search_for_ctx = Mastodon::Service::AuthenticationService.sign_in(logger: logger,
+                                                                              username: user_to_search_for[:email],
+                                                                              password: user_to_search_for[:password])
+
+    logger.log_info(log: 'Updating user to set a display name and mark it as discoverable')
+    update_creds_params = described_class::UpdateCredentialsBuilder.new
+                                                                   .with_display_name(user_to_search_for_account.username)
+                                                                   #  .set_discoverable(true)
+                                                                   .build
+    described_class.update_credentials(logger: logger, auth_context: user_to_search_for_ctx,
+                                       updated_credentials: update_creds_params)
+
+    found_users = []
+    times_checked = 0
+    times_to_check = 9
+    while found_users.empty? && times_checked < times_to_check
+      logger.log_info(log: "Looking for user by name: #{user_to_search_for_account.username}")
+      found_users = described_class.search(logger: logger, auth_context: admin_auth_context,
+                                           query: user_to_search_for_account.username)
+      break unless found_users.empty?
+
+      times_checked += 1
+      logger.log_info(log: "User was not found, waiting 10 seconds. (#{times_checked}/#{times_to_check} attempts)")
+      sleep 10
+    end
+    expect(found_users.size).to eq 1
   end
 end
