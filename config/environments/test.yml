@@ -1,5 +1,6 @@
 selenium:
   grid_url: 'http://172.18.0.2:4444/wd/hub'
+  grid_node_count: 6
 environment:
   protocol: 'http://'
   # Get the Mastodon dev container IP by running `docker network inspect mastodon_devcontainer_external_network` and looking for the
